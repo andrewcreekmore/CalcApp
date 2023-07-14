@@ -23,6 +23,7 @@ PROG_NORMAL_FONT_SIZE = 32
 BLACK = '#000000'
 WHITE = '#EEEEEE'
 LIGHT_GRAY = '#E8E8E8'
+DARK_GRAY = '#505050'
 GRAY = '#D9D9D9'
 TITLE_BAR_HEX_COLORS = {
     'dark': 0x00000000,
@@ -36,16 +37,34 @@ COLORS = {
     'orangeHighlight': {'fg': 'white', 'hover': 'white', 'text': ('black', 'FF9500')}       
 }
 
-NUMBER_POSITIONS = {
-    '.': {'col': 2, 'row': 6, 'span': 1},
-    0: {'col': 0, 'row': 6, 'span': 2},
-    1: {'col': 0, 'row': 5, 'span': 1},
-    2: {'col': 1, 'row': 5, 'span': 1},
-    3: {'col': 2, 'row': 5, 'span': 1},
-    4: {'col': 0, 'row': 4, 'span': 1},
-    5: {'col': 1, 'row': 4, 'span': 1},
-    6: {'col': 2, 'row': 4, 'span': 1},
-    7: {'col': 0, 'row': 3, 'span': 1},
-    8: {'col': 1, 'row': 3, 'span': 1},
-    9: {'col': 2, 'row': 3, 'span': 1},
+# button layout definitions
+
+BUTTON_STYLING = { 'gap': 0.5, 'corner-radius': 0}
+
+NUMBER_BUTTONS = {
+    '.': {'column': 2, 'row': 6, 'span': 1},
+    0: {'column': 0, 'row': 6, 'span': 2},
+    1: {'column': 0, 'row': 5, 'span': 1},
+    2: {'column': 1, 'row': 5, 'span': 1},
+    3: {'column': 2, 'row': 5, 'span': 1},
+    4: {'column': 0, 'row': 4, 'span': 1},
+    5: {'column': 1, 'row': 4, 'span': 1},
+    6: {'column': 2, 'row': 4, 'span': 1},
+    7: {'column': 0, 'row': 3, 'span': 1},
+    8: {'column': 1, 'row': 3, 'span': 1},
+    9: {'column': 2, 'row': 3, 'span': 1},
+}
+
+OPERATOR_BUTTONS = {
+    'clear': {'column': 0, 'row': 2, 'text': 'AC', 'image path': None},
+    'invert': {'column': 1, 'row': 2, 'text': '', 'image path': {'light': 'images/invertLight.png', 'dark': 'images/invertDark.png'}},
+    'percent': {'column': 2, 'row': 2, 'text': '%', 'image path': None}
+    }
+
+MATH_BUTTONS = {
+    '/': {'column': 3, 'row': 2, 'character': '', 'image path': {'light': 'images/divideLight.png', 'dark': 'images/divideDark.png'}},
+    '*': {'column': 3, 'row': 3, 'character': 'x', 'image path': None},
+    '-': {'column': 3, 'row': 4, 'character': '-', 'image path': None},
+    '=': {'column': 3, 'row': 6, 'character': '=', 'image path': None},
+    '+': {'column': 3, 'row': 5, 'character': '+', 'image path': None}
 }
