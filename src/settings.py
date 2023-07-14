@@ -1,7 +1,7 @@
 """
 settings.py: formatting + positional data
 - element sizes, text attributes, layout styling
-- button positions, color definitions
+- color definitions, button metadata, key mappings 
 """
 
 # basic layout sizing
@@ -67,4 +67,26 @@ MATH_BUTTONS = {
     '-': {'column': 3, 'row': 4, 'character': '-', 'image path': None},
     '=': {'column': 3, 'row': 6, 'character': '=', 'image path': None},
     '+': {'column': 3, 'row': 5, 'character': '+', 'image path': None}
+}
+
+# map of input keycodes to corresponding CalcApp function and argument
+KEY_FUNCTION_MAP = {
+    'Delete': {'function': 'clearAll'},
+    'BackSpace': {'function': 'clearLast'},
+    'Return': {'function': 'mathPressed', 'arg': '='},
+    'plus': {'function': 'mathPressed', 'arg': '+'},
+    'minus': {'function': 'mathPressed', 'arg': '-'},
+    'asterisk': {'function': 'mathPressed', 'arg': '*'},
+    'slash': {'function': 'mathPressed', 'arg': '/'},
+    'period': {'function': 'numberPressed', 'arg': '.'},
+    '0': {'function': 'numberPressed', 'arg': '0'},
+    '1': {'function': 'numberPressed', 'arg': '1'},
+    '2': {'function': 'numberPressed', 'arg': '2'},
+    '3': {'function': 'numberPressed', 'arg': '3'},
+    '4': {'function': 'numberPressed', 'arg': '4'},
+    '5': {'function': 'numberPressed', 'arg': '5'},
+    '6': {'function': 'numberPressed', 'arg': '6'},
+    '7': {'function': 'numberPressed', 'arg': '7'},
+    '8': {'function': 'numberPressed', 'arg': '8'},
+    '9': {'function': 'numberPressed', 'arg': '9'}
 }

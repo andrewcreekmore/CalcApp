@@ -16,6 +16,7 @@ except:
 from buttons import *
 from settings import *
 
+
 class CalcMode(Enum):
     """ Represents possible modes of CalcApp operation. """
     CM_STANDARD = "Standard"
@@ -57,8 +58,21 @@ class CalcApp(ctk.CTk):
         # create default (Standard mode) activeFrame + setup its widgets
         self.initStandardWidgets()
 
+        keyEventSequence = '<KeyPress>'
+        self.bind(keyEventSequence, self.keyEventHandle)
+
         # run
         self.mainloop()
+
+    def keyEventHandle(self, event):
+        """ Calls appropriate function based on input keyboard event. """
+
+        lookupKey = event.keysym
+        if 'arg' in KEY_FUNCTION_MAP[lookupKey]:
+            getattr(self, KEY_FUNCTION_MAP[lookupKey]['function'])(KEY_FUNCTION_MAP[lookupKey]['arg'])
+            
+        else: # no args passed
+            getattr(self, KEY_FUNCTION_MAP[lookupKey]['function'])()
 
     def changeTitleBarColor(self, isDark):
         """ If on Windows platform, changes app's title bar color to match rest of window. """
@@ -92,7 +106,7 @@ class CalcApp(ctk.CTk):
         # setup clear (AC) button
         Button(parent = self.activeFrame,
             text = OPERATOR_BUTTONS['clear']['text'],
-            function = self.clear,
+            function = self.clearAll,
             column = OPERATOR_BUTTONS['clear']['column'],
             row = OPERATOR_BUTTONS['clear']['row'],
             font = mainWidgetFont)
@@ -155,9 +169,13 @@ class CalcApp(ctk.CTk):
                     row = data['row'],
                     font = mainWidgetFont)
         
-    def clear(self):
+    def clearAll(self):
         """ """
         print('cleared!')
+
+    def clearLast(self):
+        """ """
+        print('cleared last input!')
 
     def percentage(self):
         """ """
@@ -198,9 +216,7 @@ class ModeOptionMenu(ctk.CTkOptionMenu):
         """ Sets CalcApp's currentMode variable to be equivalent to the selected string menu option, if != current. """
 
         rootApp = self.master.master
-        currentMode = rootApp.currentMode
-
-        if currentMode != CalcMode(selection):
+        if rootApp.currentMode != CalcMode(selection):
             rootApp.currentMode = CalcMode(selection)
 
             match rootApp.currentMode:
