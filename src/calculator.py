@@ -20,6 +20,7 @@ class CalcMode(Enum):
     """ Represents possible modes of CalcApp operation. """
     CM_STANDARD = "Standard"
     CM_PROGRAMMING = "Programming"
+    CM_SCIENTIFIC = "Scientific"
 
 
 class CalcApp(ctk.CTk):
@@ -43,25 +44,18 @@ class CalcApp(ctk.CTk):
 
         # default to Standard operating mode
         self.currentMode = CalcMode('Standard')
-        
-        # setup grid layout
-        self.rowconfigure(list(range(STD_MAIN_ROWS)), weight = 1, uniform= 'a')
-        self.columnconfigure(list(range(STD_MAIN_COLUMNS)), weight = 1, uniform= 'a')
 
         # data
         self.resultString = ctk.StringVar(value = '0')
         self.lastOperationString = ctk.StringVar(value = '')
 
-        # setup mode menu
-        ModeOptionMenu(self)
-
-        # setup widgets
-        match self.currentMode:
-            case CalcMode.CM_STANDARD:
-                self.initStandardWidgets()
-
-            case CalcMode.CM_PROGRAMMING:
-                self.initProgrammingWidgets()
+        # create menu frame + mode menu
+        self.menuFrame = Frame(self, "transparent", WHITE, 0, 1, 1)
+        self.menuFrame.pack(side = 'top', anchor = 'w', padx = 10) # place in top-left
+        ModeOptionMenu(self.menuFrame) # create CalcMode option menu w/ menuFrame parent
+        
+        # create default (Standard mode) activeFrame + setup its widgets
+        self.initStandardWidgets()
 
         # run
         self.mainloop()
@@ -78,30 +72,38 @@ class CalcApp(ctk.CTk):
 
     def initStandardWidgets(self):
         """ Initializes Standard CalcMode widgets: OutputLabels, operator buttons, number buttons. """
+        
+        # setup active frame (container for current CalcMode's contents)
+        self.activeFrame = Frame(self, "transparent", WHITE, 0, 1, 1)
+        self.activeFrame.pack(side = 'bottom', expand = True, fill = 'both', anchor = 's')
 
         # setup widget fonts
         mainWidgetFont = ctk.CTkFont(family = FONT, size = STD_NORMAL_FONT_SIZE)
         resultFont = ctk.CTkFont(family = FONT, size = STD_OUTPUT_FONT_SIZE)
 
+        # setup frame grid layout
+        self.activeFrame.rowconfigure(list(range(STD_MAIN_ROWS)), weight = 1, uniform = 'a')
+        self.activeFrame.columnconfigure(list(range(STD_MAIN_COLUMNS)), weight = 1, uniform = 'a')
+        
         # setup output labels
-        OutputLabel(self, 0, 'se', mainWidgetFont, self.lastOperationString) # last entered operation
-        OutputLabel(self, 1, 'e', resultFont, self.resultString) # result
+        OutputLabel(self.activeFrame, 0, 'se', mainWidgetFont, self.lastOperationString) # last entered operation
+        OutputLabel(self.activeFrame, 1, 'e', resultFont, self.resultString) # result
 
         # setup clear (AC) button
-        Button(parent = self,
-               text = OPERATOR_BUTTONS['clear']['text'],
-               function = self.clear,
-               column = OPERATOR_BUTTONS['clear']['column'],
-               row = OPERATOR_BUTTONS['clear']['row'],
-               font = mainWidgetFont)
+        Button(parent = self.activeFrame,
+            text = OPERATOR_BUTTONS['clear']['text'],
+            function = self.clear,
+            column = OPERATOR_BUTTONS['clear']['column'],
+            row = OPERATOR_BUTTONS['clear']['row'],
+            font = mainWidgetFont)
         
         # setup percentage (%) button
-        Button(parent = self,
-               text = OPERATOR_BUTTONS['percent']['text'],
-               function = self.percentage,
-               column = OPERATOR_BUTTONS['percent']['column'],
-               row = OPERATOR_BUTTONS['percent']['row'],
-               font = mainWidgetFont)
+        Button(parent = self.activeFrame,
+            text = OPERATOR_BUTTONS['percent']['text'],
+            function = self.percentage,
+            column = OPERATOR_BUTTONS['percent']['column'],
+            row = OPERATOR_BUTTONS['percent']['row'],
+            font = mainWidgetFont)
         
         # setup invert (+/-) button
         # create image
@@ -109,7 +111,7 @@ class CalcApp(ctk.CTk):
             light_image = Image.open(OPERATOR_BUTTONS['invert']['image path']['dark']),
             dark_image = Image.open(OPERATOR_BUTTONS['invert']['image path']['light']))
         # create button
-        ImageButton(parent = self, 
+        ImageButton(parent = self.activeFrame, 
                     text = OPERATOR_BUTTONS['invert']['text'],
                     image = invertImage,
                     function = self.invert,
@@ -119,7 +121,7 @@ class CalcApp(ctk.CTk):
         # setup number buttons
         for number, data in NUMBER_BUTTONS.items():
             NumberButton(
-                parent = self,
+                parent = self.activeFrame,
                 text = number,
                 function = self.numberPressed,
                 column = data['column'],
@@ -136,7 +138,7 @@ class CalcApp(ctk.CTk):
                     dark_image = Image.open(data['image path']['light']))
                 # create button
                 MathImageButton(
-                    parent = self,
+                    parent = self.activeFrame,
                     operator = operator,
                     function = self.mathPressed,
                     column = data['column'],
@@ -145,7 +147,7 @@ class CalcApp(ctk.CTk):
                 
             else: # no image assigned
                 MathButton(
-                    parent = self,
+                    parent = self.activeFrame,
                     text = data['character'],
                     operator = operator,
                     function = self.mathPressed,
@@ -177,16 +179,20 @@ class CalcApp(ctk.CTk):
         """ Initializes Programming CalcMode widgets... """
         pass
 
+    def initScientificWidgets(self):
+        """ Initializes Scientific CalcMode widgets... """
+        pass
+
 
 class ModeOptionMenu(ctk.CTkOptionMenu):
-    """ Drop-down menu allowing CalcApp operating modes (i.e., Standard, Programming). """
+    """ Drop-down menu allowing CalcApp operating modes (i.e., Standard, Programming, Scientific). """
 
     def __init__(self, parent):
         """ """
         super().__init__(master = parent, width = 105, fg_color = (LIGHT_GRAY, DARK_GRAY), button_color = COLORS['orange']['fg'], button_hover_color = COLORS['orange']['hover'],
                          text_color = (BLACK, WHITE), font = ctk.CTkFont(family = FONT, size = MODE_SWITCH_FONT_SIZE),
                          values = [e.value for e in CalcMode], command = self.modeOptionMenuCallback)
-        self.place(relx = 0.05, rely = 0.02, anchor = 'nw') # place in top-right; northeast anchor
+        self.pack()
 
     def modeOptionMenuCallback(self, selection):
         """ Sets CalcApp's currentMode variable to be equivalent to the selected string menu option. """
@@ -196,11 +202,17 @@ class ModeOptionMenu(ctk.CTkOptionMenu):
 
             case CalcMode.CM_STANDARD:
                 print("switched to Standard CalcMode!")
-                self.master.initStandardWidgets()
+                self.master.master.initStandardWidgets()
 
             case CalcMode.CM_PROGRAMMING:
                 print("switched to Programming CalcMode!")
-                self.master.initProgrammingWidgets()
+                self.master.master.activeFrame.destroy()
+                self.master.master.initProgrammingWidgets()
+
+            case CalcMode.CM_SCIENTIFIC:
+                print("switched to Scientific CalcMode!")
+                self.master.master.activeFrame.destroy()
+                self.master.master.initScientificWidgets()
 
 
 class DebugCheckModeButton(ctk.CTkButton):
@@ -218,9 +230,21 @@ class DebugCheckModeButton(ctk.CTkButton):
 class OutputLabel(ctk.CTkLabel):
     """ Label representing calculator output: last performed operation, operation result, etc. """
     def __init__(self, parent, row, anchor, font, stringVar):
-
+        """ """
         super().__init__(master = parent, font = font, textvariable = stringVar)
         self.grid(column = 0, columnspan = 4, row = row, sticky = anchor, padx = 15)
+
+
+class Frame(ctk.CTkFrame):
+    """ Represents a generic container for widgets. """
+    def __init__(self, parent, fgColor, borderColor, borderWidth, width, height):
+        """ """
+        super().__init__(master = parent, 
+                         fg_color = fgColor, 
+                         border_color = borderColor, 
+                         border_width = borderWidth, 
+                         width = width, 
+                         height = height)
 
 
 if __name__ == '__main__':
