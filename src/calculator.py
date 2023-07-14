@@ -50,7 +50,7 @@ class CalcApp(ctk.CTk):
         self.lastOperationString = ctk.StringVar(value = '')
 
         # create menu frame + mode menu
-        self.menuFrame = Frame(self, "transparent", WHITE, 0, 1, 1)
+        self.menuFrame = Frame(self)
         self.menuFrame.pack(side = 'top', anchor = 'w', padx = 10) # place in top-left
         ModeOptionMenu(self.menuFrame) # create CalcMode option menu w/ menuFrame parent
         
@@ -74,7 +74,7 @@ class CalcApp(ctk.CTk):
         """ Initializes Standard CalcMode widgets: OutputLabels, operator buttons, number buttons. """
         
         # setup active frame (container for current CalcMode's contents)
-        self.activeFrame = Frame(self, "transparent", WHITE, 0, 1, 1)
+        self.activeFrame = Frame(self)
         self.activeFrame.pack(side = 'bottom', expand = True, fill = 'both', anchor = 's')
 
         # setup widget fonts
@@ -195,24 +195,28 @@ class ModeOptionMenu(ctk.CTkOptionMenu):
         self.pack()
 
     def modeOptionMenuCallback(self, selection):
-        """ Sets CalcApp's currentMode variable to be equivalent to the selected string menu option. """
-        self.master.currentMode = CalcMode(selection)
+        """ Sets CalcApp's currentMode variable to be equivalent to the selected string menu option, if != current. """
 
-        match self.master.currentMode:
+        rootApp = self.master.master
+        currentMode = rootApp.currentMode
 
-            case CalcMode.CM_STANDARD:
-                print("switched to Standard CalcMode!")
-                self.master.master.initStandardWidgets()
+        if currentMode != CalcMode(selection):
+            rootApp.currentMode = CalcMode(selection)
 
-            case CalcMode.CM_PROGRAMMING:
-                print("switched to Programming CalcMode!")
-                self.master.master.activeFrame.destroy()
-                self.master.master.initProgrammingWidgets()
+            match rootApp.currentMode:
+                case CalcMode.CM_STANDARD:
+                    print("switched to Standard CalcMode!")
+                    rootApp.initStandardWidgets()
 
-            case CalcMode.CM_SCIENTIFIC:
-                print("switched to Scientific CalcMode!")
-                self.master.master.activeFrame.destroy()
-                self.master.master.initScientificWidgets()
+                case CalcMode.CM_PROGRAMMING:
+                    print("switched to Programming CalcMode!")
+                    rootApp.activeFrame.destroy()
+                    rootApp.initProgrammingWidgets()
+
+                case CalcMode.CM_SCIENTIFIC:
+                    print("switched to Scientific CalcMode!")
+                    rootApp.activeFrame.destroy()
+                    rootApp.initScientificWidgets()
 
 
 class DebugCheckModeButton(ctk.CTkButton):
@@ -237,14 +241,9 @@ class OutputLabel(ctk.CTkLabel):
 
 class Frame(ctk.CTkFrame):
     """ Represents a generic container for widgets. """
-    def __init__(self, parent, fgColor, borderColor, borderWidth, width, height):
+    def __init__(self, parent):
         """ """
-        super().__init__(master = parent, 
-                         fg_color = fgColor, 
-                         border_color = borderColor, 
-                         border_width = borderWidth, 
-                         width = width, 
-                         height = height)
+        super().__init__(master = parent, fg_color = "transparent")
 
 
 if __name__ == '__main__':
