@@ -47,8 +47,16 @@ class CalcApp(ctk.CTk):
         self.currentMode = CalcMode('Standard')
 
         # data
-        self.resultString = ctk.StringVar(value = '0')
-        self.lastOperationString = ctk.StringVar(value = '')
+        self.cumulativeInputDisplayString = ctk.StringVar(value = '0')
+        self.cumulativeOperationDisplayString = ctk.StringVar(value = '')
+        self.cumulativeNumInputList = []
+        self.lastCumulativeNumInputList = []
+        self.cumulativeOperationList = []
+
+        # data flags
+        self.lastInputWasNum = False
+        self.lastOperationWasEval = False
+        self.skipAddingLastNumInputToOperation = False
 
         # create menu frame + mode menu
         self.menuFrame = Frame(self)
@@ -57,7 +65,8 @@ class CalcApp(ctk.CTk):
         
         # create default (Standard mode) activeFrame + setup its widgets
         self.initStandardWidgets()
-
+        
+        # setup keyboard event binding
         keyEventSequence = '<KeyPress>'
         self.bind(keyEventSequence, self.keyEventHandle)
 
@@ -100,8 +109,8 @@ class CalcApp(ctk.CTk):
         self.activeFrame.columnconfigure(list(range(STD_MAIN_COLUMNS)), weight = 1, uniform = 'a')
         
         # setup output labels
-        OutputLabel(self.activeFrame, 0, 'se', mainWidgetFont, self.lastOperationString) # last entered operation
-        OutputLabel(self.activeFrame, 1, 'e', resultFont, self.resultString) # result
+        OutputLabel(self.activeFrame, 0, 'se', mainWidgetFont, self.cumulativeOperationDisplayString) # last entered operation
+        OutputLabel(self.activeFrame, 1, 'e', resultFont, self.cumulativeInputDisplayString) # result
 
         # setup clear (AC) button
         Button(parent = self.activeFrame,
@@ -170,28 +179,158 @@ class CalcApp(ctk.CTk):
                     font = mainWidgetFont)
         
     def clearAll(self):
-        """ """
-        print('cleared!')
+        """ Resets output and data to default state. """
+
+        # clear display output - set to defaults
+        self.cumulativeInputDisplayString.set(0) 
+        self.cumulativeOperationDisplayString.set('')
+
+        # clear data
+        self.cumulativeNumInputList.clear()
+        self.cumulativeOperationList.clear()
 
     def clearLast(self):
-        """ """
-        print('cleared last input!')
+        """ Removes single most recent input (number or operator). """
 
+        # if last input was '=', do nothing
+        if self.lastOperationWasEval and not self.lastInputWasNum:
+            return 
+
+        if self.lastInputWasNum:
+            # remove last num input from data
+            *self.cumulativeNumInputList,_ = self.cumulativeNumInputList
+            
+            # update display output
+            cumulativeNumInputToDisplay = ''.join(self.cumulativeNumInputList) 
+            self.cumulativeInputDisplayString.set(cumulativeNumInputToDisplay)
+
+        else: # last input was non-(=) math operator
+
+            # remove last operator input from data
+            *self.cumulativeOperationList,_ = self.cumulativeOperationList
+
+            # update relevant data
+            self.cumulativeNumInputList = list(self.lastCumulativeNumInputList) # restore previous, prior to clear when math operated pressed
+            self.skipAddingLastNumInputToOperation = True # avoiding duplicates
+
+            # update display output
+            self.cumulativeOperationDisplayString.set(' '.join(self.cumulativeOperationList))
+        
     def percentage(self):
-        """ """
-        print('percentage!')
+        """ Divides current number input / result value by 100. """
+
+        if self.cumulativeNumInputList:
+            # get current number input as float
+            currentNumInputFloat = float(''.join(self.cumulativeNumInputList))
+
+            # convert to percentage
+            currentPercentFloat = currentNumInputFloat / 100
+            self.cumulativeNumInputList[0] = str(currentPercentFloat)
+
+            # update display output
+            self.cumulativeInputDisplayString.set(''.join(self.cumulativeNumInputList))
 
     def invert(self):
-        """ """
-        print('invert!')
+        """ Flips sign of current number input / result. """
+
+        # get current number input as str
+        currentNumInput = ''.join(self.cumulativeNumInputList)
+
+        def flipSign(numInputStr):
+            """ Helper function: given a string representing a number, return its sign inverse as a string. """
+            return ' '.join(str(-int(each)) for each in numInputStr.split())
+
+        if currentNumInput:
+            self.cumulativeNumInputList[0] = flipSign(self.cumulativeNumInputList[0])
+            # update display output
+            self.cumulativeInputDisplayString.set(''.join(self.cumulativeNumInputList))
 
     def numberPressed(self, value):
-        """ """
-        print(value)
+        """ Handles numerical input. """
+
+        # each input value added to list as string
+        self.cumulativeNumInputList.append(str(value))
+        # from list, convert to displayed format (w/ new inputs added to end of list (positioned to right of last input)) 
+        cumulativeNumInputToDisplay = ''.join(self.cumulativeNumInputList) 
+        self.cumulativeInputDisplayString.set(cumulativeNumInputToDisplay)
+
+        # update tracking data
+        self.lastInputWasNum = True
 
     def mathPressed(self, value):
-        """ """
-        print(value)
+        """
+        Handles math operator input. 
+        This includes processing duplicate inputs and additional (but different) operator inputs back to back.
+        """
+
+        # check if last input was also a non-evaluating math operation
+        if not self.lastInputWasNum and not self.lastOperationWasEval:
+            if self.cumulativeOperationList[-1] == value:
+                return # can't input same operation twice
+            
+            else:
+                # replace last input operation with new operation
+                self.clearLast()
+                self.skipAddingLastNumInputToOperation = False
+
+                # update data
+                self.cumulativeOperationList.append(value)
+                self.cumulativeNumInputList.clear()
+                
+                # update display output
+                self.cumulativeInputDisplayString.set('')
+                self.cumulativeOperationDisplayString.set(' '.join(self.cumulativeOperationList))
+    
+                return
+
+        # get the cumulative number input + append to cumulative operation list
+        currentCumulativeNumInput = ''.join(self.cumulativeNumInputList)
+        if not self.skipAddingLastNumInputToOperation:
+            self.cumulativeOperationList.append(currentCumulativeNumInput)
+
+        else: # reset flag
+            self.skipAddingLastNumInputToOperation = False
+
+        # update input tracking flag
+        self.lastInputWasNum = False 
+
+        if currentCumulativeNumInput: # do not proceed if no num input exists
+            if value != '=': # special case
+
+                # update data
+                self.cumulativeOperationList.append(value)
+                self.lastCumulativeNumInputList = list(self.cumulativeNumInputList) # store in case operation is canceled
+                self.cumulativeNumInputList.clear()
+                self.lastOperationWasEval = False
+                
+                # update display output
+                self.cumulativeInputDisplayString.set('')
+                self.cumulativeOperationDisplayString.set(' '.join(self.cumulativeOperationList))
+
+            else: # value was '='
+                # get operation and evaluate
+                currentCumulativeOperation = ''.join(self.cumulativeOperationList)
+                currentResult = eval(currentCumulativeOperation)
+
+                # format evaluated result, if float
+                if isinstance(currentResult, float):
+                    
+                    # if result is a float, but has no fractional part, convert to int
+                    if currentResult.is_integer():
+                        currentResult = int(currentResult)
+                    
+                    else: # has fractional part; manage precision
+                        currentResult = round(currentResult, 3)
+                        # TODO: expose precision as a variable in an app settings menu
+
+                # update data
+                self.lastOperationWasEval = True
+                self.cumulativeOperationList.clear()
+                self.cumulativeNumInputList = [str(currentResult)] # empty + update by creating new w/ result
+
+                # update display output
+                self.cumulativeInputDisplayString.set(currentResult)
+                self.cumulativeOperationDisplayString.set(currentCumulativeOperation)
 
     def initProgrammingWidgets(self):
         """ Initializes Programming CalcMode widgets... """
