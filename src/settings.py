@@ -6,18 +6,20 @@ settings.py: formatting + positional data
 
 # basic layout sizing
 WINDOW_SIZE = (400, 700)
-STD_MAIN_ROWS = 7
-STD_MAIN_COLUMNS = 4
-PROG_MAIN_ROWS = 7
-PROG_MAIN_COLUMNS = 4
+NUM_ROWS_COLUMNS = {
+    'Standard': {'rows': 7, 'columns': 4},
+    'Programming': {'rows': 8, 'columns': 5},
+    'Scientific': {'rows': 8, 'columns': 4}
+} 
 
 # text attributes
 FONT = 'Helvetica'
 MODE_SWITCH_FONT_SIZE = 14
-STD_OUTPUT_FONT_SIZE = 70
-STD_NORMAL_FONT_SIZE = 32
-PROG_OUTPUT_FONT_SIZE = 70
-PROG_NORMAL_FONT_SIZE = 32
+FONT_SIZES = {
+    'Standard': {'largerFont': 70, 'smallerFont': 32},
+    'Programming': {'largerFont': 70, 'smallerFont': 32},
+    'Scientific': {'largerFont': 70, 'smallerFont': 32}
+}
 
 # color definitions
 BLACK = '#000000'
@@ -37,37 +39,7 @@ COLORS = {
     'orangeHighlight': {'fg': 'white', 'hover': 'white', 'text': ('black', 'FF9500')}       
 }
 
-# button layout definitions
-
 BUTTON_STYLING = { 'gap': 0.5, 'corner-radius': 0}
-
-NUMBER_BUTTONS = {
-    '.': {'column': 2, 'row': 6, 'span': 1},
-    0: {'column': 0, 'row': 6, 'span': 2},
-    1: {'column': 0, 'row': 5, 'span': 1},
-    2: {'column': 1, 'row': 5, 'span': 1},
-    3: {'column': 2, 'row': 5, 'span': 1},
-    4: {'column': 0, 'row': 4, 'span': 1},
-    5: {'column': 1, 'row': 4, 'span': 1},
-    6: {'column': 2, 'row': 4, 'span': 1},
-    7: {'column': 0, 'row': 3, 'span': 1},
-    8: {'column': 1, 'row': 3, 'span': 1},
-    9: {'column': 2, 'row': 3, 'span': 1},
-}
-
-OPERATOR_BUTTONS = {
-    'clear': {'column': 0, 'row': 2, 'text': 'AC', 'image path': None},
-    'invert': {'column': 1, 'row': 2, 'text': '', 'image path': {'light': 'images/invertLight.png', 'dark': 'images/invertDark.png'}},
-    'percent': {'column': 2, 'row': 2, 'text': '%', 'image path': None}
-    }
-
-MATH_BUTTONS = {
-    '/': {'column': 3, 'row': 2, 'character': '', 'image path': {'light': 'images/divideLight.png', 'dark': 'images/divideDark.png'}},
-    '*': {'column': 3, 'row': 3, 'character': 'x', 'image path': None},
-    '-': {'column': 3, 'row': 4, 'character': '-', 'image path': None},
-    '=': {'column': 3, 'row': 6, 'character': '=', 'image path': None},
-    '+': {'column': 3, 'row': 5, 'character': '+', 'image path': None}
-}
 
 # map of input keycodes to corresponding CalcApp function and argument
 KEY_FUNCTION_MAP = {
@@ -89,4 +61,81 @@ KEY_FUNCTION_MAP = {
     '7': {'function': 'numberPressed', 'arg': '7'},
     '8': {'function': 'numberPressed', 'arg': '8'},
     '9': {'function': 'numberPressed', 'arg': '9'}
+}
+
+# standard CalcMode: button layout definitions
+STANDARD_NUMBER_BUTTONS = {
+    '.': {'column': 2, 'row': 6, 'span': 1},
+    0: {'column': 1, 'row': 6, 'span': 1},
+    1: {'column': 0, 'row': 5, 'span': 1},
+    2: {'column': 1, 'row': 5, 'span': 1},
+    3: {'column': 2, 'row': 5, 'span': 1},
+    4: {'column': 0, 'row': 4, 'span': 1},
+    5: {'column': 1, 'row': 4, 'span': 1},
+    6: {'column': 2, 'row': 4, 'span': 1},
+    7: {'column': 0, 'row': 3, 'span': 1},
+    8: {'column': 1, 'row': 3, 'span': 1},
+    9: {'column': 2, 'row': 3, 'span': 1},
+}
+
+STANDARD_OPERATOR_BUTTONS = {
+    'clear': {'column': 1, 'row': 2, 'text': 'AC', 'image path': None},
+    'backspace':{'column': 2, 'row': 2, 'text': '\u232B', 'image path': None},
+    'invert': {'column': 0, 'row': 6, 'text': '', 'image path': {'light': 'images/invertLight.png', 'dark': 'images/invertDark.png'}},
+    'percent': {'column': 0, 'row': 2, 'text': '%', 'image path': None}
+    }
+
+STANDARD_MATH_BUTTONS = {
+    '/': {'column': 3, 'row': 2, 'character': '', 'image path': {'light': 'images/divideLight.png', 'dark': 'images/divideDark.png'}},
+    '*': {'column': 3, 'row': 3, 'character': 'x', 'image path': None},
+    '-': {'column': 3, 'row': 4, 'character': '-', 'image path': None},
+    '=': {'column': 3, 'row': 6, 'character': '=', 'image path': None},
+    '+': {'column': 3, 'row': 5, 'character': '+', 'image path': None}
+}
+
+# programming CalcMode: button layout definitions
+PROG_NUMBER_BUTTONS = {
+    'A': {'column': 0, 'row': 2, 'span': 1, 'state': 'disabled'},
+    'B': {'column': 0, 'row': 3, 'span': 1, 'state': 'disabled'},
+    'C': {'column': 0, 'row': 4, 'span': 1, 'state': 'disabled'},
+    'D': {'column': 0, 'row': 5, 'span': 1, 'state': 'disabled'},
+    'E': {'column': 0, 'row': 6, 'span': 1, 'state': 'disabled'},
+    'F': {'column': 0, 'row': 7, 'span': 1, 'state': 'disabled'},
+    '.': {'column': 3, 'row': 7, 'span': 1, 'state': 'normal'},
+    0: {'column': 2, 'row': 7, 'span': 1, 'state': 'normal'},
+    1: {'column': 1, 'row': 6, 'span': 1, 'state': 'normal'},
+    2: {'column': 2, 'row': 6, 'span': 1, 'state': 'normal'},
+    3: {'column': 3, 'row': 6, 'span': 1, 'state': 'normal'},
+    4: {'column': 1, 'row': 5, 'span': 1, 'state': 'normal'},
+    5: {'column': 2, 'row': 5, 'span': 1, 'state': 'normal'},
+    6: {'column': 3, 'row': 5, 'span': 1, 'state': 'normal'},
+    7: {'column': 1, 'row': 4, 'span': 1, 'state': 'normal'},
+    8: {'column': 2, 'row': 4, 'span': 1, 'state': 'normal'},
+    9: {'column': 3, 'row': 4, 'span': 1, 'state': 'normal'},
+    '(': {'column': 1, 'row': 3, 'span': '1', 'state': 'normal'},
+    ')': {'column': 2, 'row': 3, 'span': '1', 'state': 'normal'}
+}
+
+PROG_OPERATOR_BUTTONS = {
+    'clear': {'column': 3, 'row': 2, 'text': 'AC', 'image path': None},
+    'backspace':{'column': 4, 'row': 2, 'text': '\u232B', 'image path': None},
+    'invert': {'column': 1, 'row': 7, 'text': '', 'image path': {'light': 'images/invertLight.png', 'dark': 'images/invertDark.png'}},
+    'percent': {'column': 3, 'row': 3, 'text': '%', 'image path': None},
+    'leftShift': {'column': 1, 'row': 2, 'text': '<<', 'image path': None},
+    'rightShift': {'column': 2, 'row': 2, 'text': '>>', 'image path': None}
+    }
+
+PROG_MATH_BUTTONS = {
+    '/': {'column': 4, 'row': 3, 'character': '', 'image path': {'light': 'images/divideLight.png', 'dark': 'images/divideDark.png'}},
+    '*': {'column': 4, 'row': 4, 'character': 'x', 'image path': None},
+    '-': {'column': 4, 'row': 5, 'character': '-', 'image path': None},
+    '=': {'column': 4, 'row': 7, 'character': '=', 'image path': None},
+    '+': {'column': 4, 'row': 6, 'character': '+', 'image path': None}
+}
+
+# button layout data lookup table
+BUTTON_LAYOUT_DATA = {
+    'Standard': {'numberButtons': STANDARD_NUMBER_BUTTONS, 'mathButtons': STANDARD_MATH_BUTTONS, 'operatorButtons': STANDARD_OPERATOR_BUTTONS},
+    'Programming': {'numberButtons': PROG_NUMBER_BUTTONS, 'mathButtons': PROG_MATH_BUTTONS, 'operatorButtons': PROG_OPERATOR_BUTTONS},
+    'Scientific': {'numberButtons': 'SCI_NUMBER_BUTTONS', 'mathButtons': 'SCI_MATH_BUTTONS', 'operatorButtons': 'SCI_OPERATOR_BUTTONS'}
 }

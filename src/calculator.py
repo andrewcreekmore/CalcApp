@@ -44,7 +44,9 @@ class CalcApp(ctk.CTk):
         self.changeTitleBarColor(isDark) # change title bar to match rest of window
 
         # default to Standard operating mode
-        self.currentMode = CalcMode('Standard')
+        #self.currentMode = CalcMode('Standard')
+        # DEBUG
+        self.currentMode = CalcMode('Programming')
 
         # data
         self.cumulativeInputDisplayString = ctk.StringVar(value = '0')
@@ -64,7 +66,9 @@ class CalcApp(ctk.CTk):
         ModeOptionMenu(self.menuFrame) # create CalcMode option menu w/ menuFrame parent
         
         # create default (Standard mode) activeFrame + setup its widgets
-        self.initStandardWidgets()
+        self.initCommonStandardWidgets()
+        # DEBUG
+        self.initProgrammingWidgets()
         
         # setup keyboard event binding
         keyEventSequence = '<KeyPress>'
@@ -77,11 +81,14 @@ class CalcApp(ctk.CTk):
         """ Calls appropriate function based on input keyboard event. """
 
         lookupKey = event.keysym
-        if 'arg' in KEY_FUNCTION_MAP[lookupKey]:
-            getattr(self, KEY_FUNCTION_MAP[lookupKey]['function'])(KEY_FUNCTION_MAP[lookupKey]['arg'])
-            
-        else: # no args passed
-            getattr(self, KEY_FUNCTION_MAP[lookupKey]['function'])()
+        try:
+            if 'arg' in KEY_FUNCTION_MAP[lookupKey]:
+                getattr(self, KEY_FUNCTION_MAP[lookupKey]['function'])(KEY_FUNCTION_MAP[lookupKey]['arg'])
+                
+            else: # no args passed
+                getattr(self, KEY_FUNCTION_MAP[lookupKey]['function'])()
+        except:
+            pass
 
     def changeTitleBarColor(self, isDark):
         """ If on Windows platform, changes app's title bar color to match rest of window. """
@@ -93,24 +100,40 @@ class CalcApp(ctk.CTk):
         except:
             pass
 
-    def initStandardWidgets(self):
-        """ Initializes Standard CalcMode widgets: OutputLabels, operator buttons, number buttons. """
-        
+    def initCommonStandardWidgets(self):
+        """ Initializes common/Standard-CalcMode widgets: OutputLabels + number, operator, and math buttons. """
+
         # setup active frame (container for current CalcMode's contents)
         self.activeFrame = Frame(self)
         self.activeFrame.pack(side = 'bottom', expand = True, fill = 'both', anchor = 's')
 
         # setup widget fonts
-        mainWidgetFont = ctk.CTkFont(family = FONT, size = STD_NORMAL_FONT_SIZE)
-        resultFont = ctk.CTkFont(family = FONT, size = STD_OUTPUT_FONT_SIZE)
+        self.smallerWidgetFont = ctk.CTkFont(family = FONT, size = FONT_SIZES[self.currentMode.value]['smallerFont'])
+        self.largerWidgetFont = ctk.CTkFont(family = FONT, size = FONT_SIZES[self.currentMode.value]['largerFont'])
 
         # setup frame grid layout
-        self.activeFrame.rowconfigure(list(range(STD_MAIN_ROWS)), weight = 1, uniform = 'a')
-        self.activeFrame.columnconfigure(list(range(STD_MAIN_COLUMNS)), weight = 1, uniform = 'a')
+        self.activeFrame.rowconfigure(list(range(NUM_ROWS_COLUMNS[self.currentMode.value]['rows'])), weight = 1, uniform = 'a')
+        self.activeFrame.columnconfigure(list(range(NUM_ROWS_COLUMNS[self.currentMode.value]['columns'])), weight = 1, uniform = 'a')
         
         # setup output labels
-        OutputLabel(self.activeFrame, 0, 'se', mainWidgetFont, self.cumulativeOperationDisplayString) # last entered operation
-        OutputLabel(self.activeFrame, 1, 'e', resultFont, self.cumulativeInputDisplayString) # result
+        OutputLabel(self.activeFrame, 0, 'se', self.smallerWidgetFont, self.cumulativeOperationDisplayString) 
+        OutputLabel(self.activeFrame, 1, 'e', self.largerWidgetFont, self.cumulativeInputDisplayString)
+
+        # get mode-relevant button layout data
+        NUMBER_BUTTONS = BUTTON_LAYOUT_DATA[self.currentMode.value]['numberButtons']
+        OPERATOR_BUTTONS = BUTTON_LAYOUT_DATA[self.currentMode.value]['operatorButtons']
+        MATH_BUTTONS = BUTTON_LAYOUT_DATA[self.currentMode.value]['mathButtons']
+
+        # setup number buttons
+        for number, data in NUMBER_BUTTONS.items():
+            NumberButton(
+                parent = self.activeFrame,
+                text = number,
+                function = self.numberPressed,
+                column = data['column'],
+                span = data['span'],
+                row = data['row'],
+                font = self.smallerWidgetFont)
 
         # setup clear (AC) button
         Button(parent = self.activeFrame,
@@ -118,7 +141,15 @@ class CalcApp(ctk.CTk):
             function = self.clearAll,
             column = OPERATOR_BUTTONS['clear']['column'],
             row = OPERATOR_BUTTONS['clear']['row'],
-            font = mainWidgetFont)
+            font = self.smallerWidgetFont)
+        
+        # setup backspace button
+        Button(parent = self.activeFrame,
+            text = OPERATOR_BUTTONS['backspace']['text'],
+            function = self.clearLast,
+            column = OPERATOR_BUTTONS['backspace']['column'],
+            row = OPERATOR_BUTTONS['backspace']['row'],
+            font = self.smallerWidgetFont)
         
         # setup percentage (%) button
         Button(parent = self.activeFrame,
@@ -126,7 +157,7 @@ class CalcApp(ctk.CTk):
             function = self.percentage,
             column = OPERATOR_BUTTONS['percent']['column'],
             row = OPERATOR_BUTTONS['percent']['row'],
-            font = mainWidgetFont)
+            font = self.smallerWidgetFont)
         
         # setup invert (+/-) button
         # create image
@@ -141,17 +172,6 @@ class CalcApp(ctk.CTk):
                     column = OPERATOR_BUTTONS['invert']['column'],
                     row = OPERATOR_BUTTONS['invert']['row'])
         
-        # setup number buttons
-        for number, data in NUMBER_BUTTONS.items():
-            NumberButton(
-                parent = self.activeFrame,
-                text = number,
-                function = self.numberPressed,
-                column = data['column'],
-                span = data['span'],
-                row = data['row'],
-                font = mainWidgetFont)
-            
         # setup math buttons
         for operator, data in MATH_BUTTONS.items():
             if data['image path']: # if image assigned (CM_STANDARD: division button only)
@@ -176,7 +196,7 @@ class CalcApp(ctk.CTk):
                     function = self.mathPressed,
                     column = data['column'],
                     row = data['row'],
-                    font = mainWidgetFont)
+                    font = self.smallerWidgetFont)
         
     def clearAll(self):
         """ Resets output and data to default state. """
@@ -198,14 +218,27 @@ class CalcApp(ctk.CTk):
 
         if self.lastInputWasNum:
             # remove last num input from data
-            *self.cumulativeNumInputList,_ = self.cumulativeNumInputList
-            
-            # update display output
-            cumulativeNumInputToDisplay = ''.join(self.cumulativeNumInputList) 
-            self.cumulativeInputDisplayString.set(cumulativeNumInputToDisplay)
+            if len(self.cumulativeNumInputList) > 0:
+                *self.cumulativeNumInputList,_ = self.cumulativeNumInputList
+
+                # handle case where -(num value) had all numvalues backspaced out, so only '-' left in list
+                if len(self.cumulativeNumInputList) == 1 and self.cumulativeNumInputList[0] == '-':
+                    self.cumulativeNumInputList.clear()
+                    self.cumulativeInputDisplayString.set(0)
+                
+                # if still values present, update display output appropriately
+                if len(self.cumulativeNumInputList) > 0:
+                    cumulativeNumInputToDisplay = ''.join(self.cumulativeNumInputList) 
+                    self.cumulativeInputDisplayString.set(cumulativeNumInputToDisplay)
+                else: # if now empty, set to 0 default display value
+                    self.cumulativeInputDisplayString.set('0')
+
+        # if there's been no input at all, do nothing
+        elif len(self.cumulativeOperationList) == 0: 
+            return
 
         else: # last input was non-(=) math operator
-
+            
             # remove last operator input from data
             *self.cumulativeOperationList,_ = self.cumulativeOperationList
 
@@ -236,12 +269,11 @@ class CalcApp(ctk.CTk):
         # get current number input as str
         currentNumInput = ''.join(self.cumulativeNumInputList)
 
-        def flipSign(numInputStr):
-            """ Helper function: given a string representing a number, return its sign inverse as a string. """
-            return ' '.join(str(-int(each)) for each in numInputStr.split())
-
-        if currentNumInput:
-            self.cumulativeNumInputList[0] = flipSign(self.cumulativeNumInputList[0])
+        if currentNumInput: # if input exists
+            isPositive = currentNumInput[0].isnumeric()
+            # flip sign + update data
+            flippedNumInput = list('-' + currentNumInput) if isPositive else list(currentNumInput[1:])
+            self.cumulativeNumInputList = flippedNumInput
             # update display output
             self.cumulativeInputDisplayString.set(''.join(self.cumulativeNumInputList))
 
@@ -264,7 +296,7 @@ class CalcApp(ctk.CTk):
         """
 
         # check if last input was also a non-evaluating math operation
-        if not self.lastInputWasNum and not self.lastOperationWasEval:
+        if not self.lastInputWasNum and not self.lastOperationWasEval and ''.join(self.cumulativeNumInputList): # do not proceed if no num input exists:
             if self.cumulativeOperationList[-1] == value:
                 return # can't input same operation twice
             
@@ -308,9 +340,18 @@ class CalcApp(ctk.CTk):
                 self.cumulativeOperationDisplayString.set(' '.join(self.cumulativeOperationList))
 
             else: # value was '='
-                # get operation and evaluate
+                
+                # get operation
                 currentCumulativeOperation = ''.join(self.cumulativeOperationList)
-                currentResult = eval(currentCumulativeOperation)
+                # parse
+                currentCumulativeOperation = self.parseParentheses(currentCumulativeOperation)
+                # evaluate
+                try:
+                    currentResult = eval(currentCumulativeOperation)
+                # error catching
+                except (SyntaxError, KeyError):
+                    self.cumulativeInputDisplayString.set('ERROR')
+                    return
 
                 # format evaluated result, if float
                 if isinstance(currentResult, float):
@@ -332,9 +373,57 @@ class CalcApp(ctk.CTk):
                 self.cumulativeInputDisplayString.set(currentResult)
                 self.cumulativeOperationDisplayString.set(currentCumulativeOperation)
 
+    def parseParentheses(self, currentCumulativeOperation):
+        """ 
+        Parses operation for instances of parentheses without adjacent numbers, e.g., '2(3)' or '2(3)2.'
+        When such instances are found, inserts '*' operator before/after as needed.
+        """
+
+        outerIndex = 0 
+        while outerIndex < 2:
+            isLeft = outerIndex # first pass = false, 2nd pass = true
+            parenth = '(' if isLeft else ')'
+            # get indices of all parenth instances
+            parenthList = [pos for pos, char in enumerate(currentCumulativeOperation) if char == parenth]
+            parenthCount = len(parenthList)
+
+            innerIndex = 0
+            while innerIndex < parenthCount:
+                # if '(', ensure there's a left-adjacent value to check
+                if ((parenthList[innerIndex] > 0) if isLeft else True): 
+                    if currentCumulativeOperation[parenthList[innerIndex] - 1].isnumeric(): # left-adjacent numeric?
+                        # if ')', ensure there's a right-adjacent value to check
+                        if (True if isLeft else (parenthList[innerIndex] != len(currentCumulativeOperation) - 1)): 
+                            if currentCumulativeOperation[parenthList[innerIndex] + 1].isnumeric(): # right-adjacent numeric?
+                                # no adjacent operator found; insert '*' appropriately
+                                posAdjustment = 0 if isLeft else 1
+                                slice = parenthList[innerIndex] + posAdjustment
+                                currentCumulativeOperation = currentCumulativeOperation[:slice] + '*' + currentCumulativeOperation[slice:]
+                                # adjust parenthList indices to account for the insertion
+                                if innerIndex != parenthCount: # if not at end
+                                    for each in range(0, parenthCount):
+                                        parenthList[each] += 1
+                innerIndex += 1
+            outerIndex += 1
+
+        return currentCumulativeOperation
+
     def initProgrammingWidgets(self):
         """ Initializes Programming CalcMode widgets... """
-        pass
+        
+        # setup bit-shift operator (<< / >>) buttons
+        Button(parent = self.activeFrame,
+            text = PROG_OPERATOR_BUTTONS['leftShift']['text'],
+            function = self.percentage,
+            column = PROG_OPERATOR_BUTTONS['leftShift']['column'],
+            row = PROG_OPERATOR_BUTTONS['leftShift']['row'],
+            font = self.smallerWidgetFont)
+        Button(parent = self.activeFrame,
+            text = PROG_OPERATOR_BUTTONS['rightShift']['text'],
+            function = self.percentage,
+            column = PROG_OPERATOR_BUTTONS['rightShift']['column'],
+            row = PROG_OPERATOR_BUTTONS['rightShift']['row'],
+            font = self.smallerWidgetFont)
 
     def initScientificWidgets(self):
         """ Initializes Scientific CalcMode widgets... """
@@ -352,26 +441,26 @@ class ModeOptionMenu(ctk.CTkOptionMenu):
         self.pack()
 
     def modeOptionMenuCallback(self, selection):
-        """ Sets CalcApp's currentMode variable to be equivalent to the selected string menu option, if != current. """
+        """ 
+        Sets CalcApp's currentMode variable to be equivalent to the selected string menu option, if != current.
+        Destroy current activeFrame, inits a new one + all common/standard widgets, then any mode-specific widgets.
+        """
 
         rootApp = self.master.master
         if rootApp.currentMode != CalcMode(selection):
             rootApp.currentMode = CalcMode(selection)
 
-            match rootApp.currentMode:
-                case CalcMode.CM_STANDARD:
-                    print("switched to Standard CalcMode!")
-                    rootApp.initStandardWidgets()
+            rootApp.activeFrame.destroy()
+            rootApp.initCommonStandardWidgets()
 
-                case CalcMode.CM_PROGRAMMING:
-                    print("switched to Programming CalcMode!")
-                    rootApp.activeFrame.destroy()
-                    rootApp.initProgrammingWidgets()
+            if rootApp.currentMode != CalcMode.CM_STANDARD:
 
-                case CalcMode.CM_SCIENTIFIC:
-                    print("switched to Scientific CalcMode!")
-                    rootApp.activeFrame.destroy()
-                    rootApp.initScientificWidgets()
+                match rootApp.currentMode:
+                    case CalcMode.CM_PROGRAMMING:
+                        rootApp.initProgrammingWidgets()
+
+                    case CalcMode.CM_SCIENTIFIC:
+                        rootApp.initScientificWidgets()
 
 
 class DebugCheckModeButton(ctk.CTkButton):
@@ -391,7 +480,11 @@ class OutputLabel(ctk.CTkLabel):
     def __init__(self, parent, row, anchor, font, stringVar):
         """ """
         super().__init__(master = parent, font = font, textvariable = stringVar)
-        self.grid(column = 0, columnspan = 4, row = row, sticky = anchor, padx = 15)
+
+        # column span depends on CalcMode
+        currentMode = self.master.master.currentMode.value
+        colSpan = NUM_ROWS_COLUMNS[currentMode]['columns']
+        self.grid(column = 0, columnspan = colSpan, row = row, sticky = anchor, padx = 15)
 
 
 class Frame(ctk.CTkFrame):
