@@ -65,17 +65,17 @@ KEY_FUNCTION_MAP = {
 
 # standard CalcMode: button layout definitions
 STANDARD_NUMBER_BUTTONS = {
-    '.': {'column': 2, 'row': 6, 'span': 1},
-    0: {'column': 1, 'row': 6, 'span': 1},
-    1: {'column': 0, 'row': 5, 'span': 1},
-    2: {'column': 1, 'row': 5, 'span': 1},
-    3: {'column': 2, 'row': 5, 'span': 1},
-    4: {'column': 0, 'row': 4, 'span': 1},
-    5: {'column': 1, 'row': 4, 'span': 1},
-    6: {'column': 2, 'row': 4, 'span': 1},
-    7: {'column': 0, 'row': 3, 'span': 1},
-    8: {'column': 1, 'row': 3, 'span': 1},
-    9: {'column': 2, 'row': 3, 'span': 1},
+    '.': {'column': 2, 'row': 6, 'span': 1, 'state': 'normal'},
+    0: {'column': 1, 'row': 6, 'span': 1, 'state': 'normal'},
+    1: {'column': 0, 'row': 5, 'span': 1, 'state': 'normal'},
+    2: {'column': 1, 'row': 5, 'span': 1, 'state': 'normal'},
+    3: {'column': 2, 'row': 5, 'span': 1, 'state': 'normal'},
+    4: {'column': 0, 'row': 4, 'span': 1, 'state': 'normal'},
+    5: {'column': 1, 'row': 4, 'span': 1, 'state': 'normal'},
+    6: {'column': 2, 'row': 4, 'span': 1, 'state': 'normal'},
+    7: {'column': 0, 'row': 3, 'span': 1, 'state': 'normal'},
+    8: {'column': 1, 'row': 3, 'span': 1, 'state': 'normal'},
+    9: {'column': 2, 'row': 3, 'span': 1, 'state': 'normal'},
 }
 
 STANDARD_OPERATOR_BUTTONS = {
@@ -133,9 +133,43 @@ PROG_MATH_BUTTONS = {
     '+': {'column': 4, 'row': 6, 'character': '+', 'image path': None}
 }
 
+# scientific CalcMode: button layout definitions
+SCI_NUMBER_BUTTONS = {
+    '.': {'column': 2, 'row': 7, 'span': 1, 'state': 'normal'},
+    0: {'column': 1, 'row': 7, 'span': 1, 'state': 'normal'},
+    1: {'column': 0, 'row': 6, 'span': 1, 'state': 'normal'},
+    2: {'column': 1, 'row': 6, 'span': 1, 'state': 'normal'},
+    3: {'column': 2, 'row': 6, 'span': 1, 'state': 'normal'},
+    4: {'column': 0, 'row': 5, 'span': 1, 'state': 'normal'},
+    5: {'column': 1, 'row': 5, 'span': 1, 'state': 'normal'},
+    6: {'column': 2, 'row': 5, 'span': 1, 'state': 'normal'},
+    7: {'column': 0, 'row': 4, 'span': 1, 'state': 'normal'},
+    8: {'column': 1, 'row': 4, 'span': 1, 'state': 'normal'},
+    9: {'column': 2, 'row': 4, 'span': 1, 'state': 'normal'},
+    '(': {'column': 0, 'row': 3, 'span': '1', 'state': 'normal'},
+    ')': {'column': 1, 'row': 3, 'span': '1', 'state': 'normal'}
+}
+
+SCI_OPERATOR_BUTTONS = {
+    'clear': {'column': 2, 'row': 2, 'text': 'AC', 'image path': None},
+    'backspace':{'column': 3, 'row': 2, 'text': '\u232B', 'image path': None},
+    'invert': {'column': 0, 'row': 7, 'text': '', 'image path': {'light': 'images/invertLight.png', 'dark': 'images/invertDark.png'}},
+    'percent': {'column': 2, 'row': 3, 'text': '%', 'image path': None},
+    'leftShift': {'column': 1, 'row': 2, 'text': '<<', 'image path': None},
+    'rightShift': {'column': 2, 'row': 2, 'text': '>>', 'image path': None}
+    }
+
+SCI_MATH_BUTTONS = {
+    '/': {'column': 3, 'row': 3, 'character': '', 'image path': {'light': 'images/divideLight.png', 'dark': 'images/divideDark.png'}},
+    '*': {'column': 3, 'row': 4, 'character': 'x', 'image path': None},
+    '-': {'column': 3, 'row': 5, 'character': '-', 'image path': None},
+    '=': {'column': 3, 'row': 7, 'character': '=', 'image path': None},
+    '+': {'column': 3, 'row': 6, 'character': '+', 'image path': None}
+}
+
 # button layout data lookup table
 BUTTON_LAYOUT_DATA = {
     'Standard': {'numberButtons': STANDARD_NUMBER_BUTTONS, 'mathButtons': STANDARD_MATH_BUTTONS, 'operatorButtons': STANDARD_OPERATOR_BUTTONS},
     'Programming': {'numberButtons': PROG_NUMBER_BUTTONS, 'mathButtons': PROG_MATH_BUTTONS, 'operatorButtons': PROG_OPERATOR_BUTTONS},
-    'Scientific': {'numberButtons': 'SCI_NUMBER_BUTTONS', 'mathButtons': 'SCI_MATH_BUTTONS', 'operatorButtons': 'SCI_OPERATOR_BUTTONS'}
+    'Scientific': {'numberButtons': SCI_NUMBER_BUTTONS, 'mathButtons': SCI_MATH_BUTTONS, 'operatorButtons': SCI_OPERATOR_BUTTONS}
 }

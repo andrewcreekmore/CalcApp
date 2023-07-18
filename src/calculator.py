@@ -133,7 +133,8 @@ class CalcApp(ctk.CTk):
                 column = data['column'],
                 span = data['span'],
                 row = data['row'],
-                font = self.smallerWidgetFont)
+                font = self.smallerWidgetFont,
+                state = data['state'])
 
         # setup clear (AC) button
         Button(parent = self.activeFrame,
@@ -375,7 +376,7 @@ class CalcApp(ctk.CTk):
 
     def parseParentheses(self, currentCumulativeOperation):
         """ 
-        Parses operation for instances of parentheses without adjacent numbers, e.g., '2(3)' or '2(3)2.'
+        Parses operation for instances of parentheses without adjacent operators, e.g., '2(3)' or '2(3)2.'
         When such instances are found, inserts '*' operator before/after as needed.
         """
 
