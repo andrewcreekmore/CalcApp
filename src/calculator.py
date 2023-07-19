@@ -3,10 +3,12 @@ calculator.py:
 - primary app logic / entry-point
 - creates instance of CalcApp, which runs main loop
 """
-
-from enum import Enum
 import customtkinter as ctk
 import darkdetect
+from enum import Enum
+import json
+import os
+from pathlib import Path
 from PIL import Image
 try: # windows only
     from ctypes import windll, byref, sizeof, c_int
@@ -39,14 +41,16 @@ class CalcApp(ctk.CTk):
         self.title('')
         self.iconbitmap('images/empty.ico')
 
-        # set light/dark based on system settings
-        ctk.set_appearance_mode(f'{"dark" if isDark else "light"}')
-        self.changeTitleBarColor(isDark) # change title bar to match rest of window
+        # get user settings data; if not defined, create w/ defaults
+        self.loadUserSettings()
 
-        # default to Standard operating mode
-        #self.currentMode = CalcMode('Standard')
-        # DEBUG
-        self.currentMode = CalcMode('Programming')
+        # set light/dark appearance
+        ctk.set_appearance_mode(self.userSettings['appearance'])
+        isDarkMode = True if self.userSettings['appearance'] == 'dark' else False
+        self.changeTitleBarColor(isDarkMode) # change title bar to match rest of window
+
+        # set calculator operating mode
+        self.currentMode = CalcMode(self.userSettings['defaultCalcMode'])
 
         # data
         self.cumulativeInputDisplayString = ctk.StringVar(value = '0')
@@ -60,16 +64,20 @@ class CalcApp(ctk.CTk):
         self.lastOperationWasEval = False
         self.skipAddingLastNumInputToOperation = False
 
-        # create menu frame + mode menu
+        # create menu frame + menu buttons
         self.menuFrame = Frame(self)
-        self.menuFrame.pack(side = 'top', anchor = 'w', padx = 10) # place in top-left
-        ModeOptionMenu(self.menuFrame) # create CalcMode option menu w/ menuFrame parent
+        self.menuFrame.pack(side = 'top', fill = 'x') # place in top-left
+
+        ModeOptionMenu(self.menuFrame, self.currentMode) # create CalcMode option menu w/ menuFrame parent
+        SettingsButton(self.menuFrame) # create settings menu button
         
         # create default (Standard mode) activeFrame + setup its widgets
         self.initCommonStandardWidgets()
-        # DEBUG
-        self.initProgrammingWidgets()
-        
+        # create any additional widgets if applicable
+        if self.currentMode is not CalcMode.CM_STANDARD:
+            initFunction = self.initProgrammingWidgets if self.currentMode is CalcMode.CM_PROGRAMMING else self.initScientificWidgets
+            initFunction()
+
         # setup keyboard event binding
         keyEventSequence = '<KeyPress>'
         self.bind(keyEventSequence, self.keyEventHandle)
@@ -99,6 +107,22 @@ class CalcApp(ctk.CTk):
             windll.dwmapi.DwmSetWindowAttribute(HWND, DWMA_ATTRIBUTE, byref(c_int(TITLE_BAR_COLOR)), sizeof(c_int)) # set attribute
         except:
             pass
+
+    def setAppearanceSetting(self, value):
+        """ Updates app appearance based on passed value and saves to appropriate user setting. """
+
+        ctk.set_appearance_mode(value)
+        isDark = True if value == 'Dark' else False
+        invisibleButtonColor = BLACK if isDark else WHITE
+        self.exitToAppButton._hover_color = invisibleButtonColor
+        self.changeTitleBarColor(isDark)
+        # update corresponding persistent saved data
+        self.saveUserSetting('appearance', value.lower())
+
+    def setDefaultModeSetting(self, value):
+        """ Routes passed calcMode value to appropriate user setting. """
+
+        self.saveUserSetting('defaultCalcMode', value)
 
     def initCommonStandardWidgets(self):
         """ Initializes common/Standard-CalcMode widgets: OutputLabels + number, operator, and math buttons. """
@@ -199,6 +223,92 @@ class CalcApp(ctk.CTk):
                     row = data['row'],
                     font = self.smallerWidgetFont)
         
+    def initSettingsMenu(self):
+        """ Initializes settings menu overlay widgets. """
+
+        # invisible button filling window behind settingsMenuSubFrame, allows exiting to main app
+        invisibleButtonColor = BLACK if ctk.get_appearance_mode() == 'Dark' else WHITE
+        self.exitToAppButton = ctk.CTkButton(self, fg_color = 'transparent', bg_color= 'transparent', hover_color = invisibleButtonColor, text = '', width = 400, height = 700, command = self.exitSettingsMenu)
+        self.exitToAppButton.place(x = 0, y = 0)
+
+        # setup widget fonts
+        self.smallerWidgetFont = ctk.CTkFont(family = FONT, size = 14)
+        self.largerWidgetFont = ctk.CTkFont(family = FONT, size = 16)
+
+        # container for actual settings menu overlay
+        self.settingsMenuSubFrame = ctk.CTkFrame(self, width = 300, height = 200, border_color = (BLACK, WHITE), border_width = 2)
+        self.settingsMenuSubFrame.pack_propagate(False)
+        self.settingsMenuSubFrame.place(relx = 0.125, rely = 0.2)
+
+        # create appearance setting label
+        self.appearanceLabel = ctk.CTkLabel(self.settingsMenuSubFrame, text = 'Appearance:', font = self.smallerWidgetFont)
+        self.appearanceLabel.pack(padx = 10, pady = 10, anchor = 'w')
+        # create appearance setting button
+        self.appearanceButton = ctk.CTkSegmentedButton(self.settingsMenuSubFrame, 
+                                                        values=["Dark", "Light"],
+                                                        command=self.setAppearanceSetting, 
+                                                        font = self.smallerWidgetFont, 
+                                                        selected_color = '#FF9500', 
+                                                        selected_hover_color = '#FFB143')
+        # set to current mode
+        self.appearanceButton.set(ctk.get_appearance_mode())
+        self.appearanceButton.pack()
+
+        # create default calculator mode setting label
+        self.defaultModeLabel = ctk.CTkLabel(self.settingsMenuSubFrame, text = 'Default Calculator Mode:', font = self.smallerWidgetFont)
+        self.defaultModeLabel.pack(padx = 10, pady = 10, anchor = 'w')
+
+        # create default calculator mode setting button
+        self.defaultModeButton = ctk.CTkSegmentedButton(self.settingsMenuSubFrame, 
+                                                        values=["Standard", "Programming", "Scientific"],
+                                                        command=self.setDefaultModeSetting, 
+                                                        font = self.smallerWidgetFont, 
+                                                        selected_color = '#FF9500', 
+                                                        selected_hover_color = '#FFB143')
+        self.defaultModeButton.set(self.userSettings['defaultCalcMode'])
+        self.defaultModeButton.pack()
+
+    def exitSettingsMenu(self):
+        """ Cleans up when closing the settingsMenu overlay. """
+        self.settingsMenuSubFrame.destroy()
+        self.exitToAppButton.destroy()
+
+    def loadUserSettings(self):
+        """ Loads user settings data from external JSON file, creating w/ defaults if necessary. Updates local data accordingly. """
+        
+        defaultSettings = {'appearance': f'{"dark" if darkdetect.isDark else "light"}', 'defaultCalcMode': 'Standard'}
+
+        # load saved settings, if present
+        settingsData = {}
+        settingsFile = Path('settings.json')
+        if settingsFile.is_file():
+            with open('settings.json', 'r') as file:
+                settingsData = json.load(file)
+        else:
+            with open('settings.json', 'w') as file:
+                json.dump(defaultSettings, file, indent = 4)
+            with open('settings.json', 'r') as file:
+                settingsData = json.load(file)
+
+        # update local settings data
+        self.userSettings = settingsData
+
+    def saveUserSetting(self, key, value):
+        """ Updates a single user setting in external JSON file, as well as locally.  """
+
+        # update persistent settings data
+        fileName = 'settings.json'
+        with open(fileName, 'r') as file:
+            settingsData = json.load(file)
+            settingsData[key] = value
+
+        os.remove(fileName)
+        with open(fileName, 'w') as file:
+            json.dump(settingsData, file, indent = 4)
+
+        # update local settings data
+        self.userSettings[key] = value
+
     def clearAll(self):
         """ Resets output and data to default state. """
 
@@ -379,32 +489,29 @@ class CalcApp(ctk.CTk):
         Parses operation for instances of parentheses without adjacent operators, e.g., '2(3)' or '2(3)2.'
         When such instances are found, inserts '*' operator before/after as needed.
         """
-
         outerIndex = 0 
         while outerIndex < 2:
             isLeft = outerIndex # first pass = false, 2nd pass = true
             parenth = '(' if isLeft else ')'
             # get indices of all parenth instances
-            parenthList = [pos for pos, char in enumerate(currentCumulativeOperation) if char == parenth]
-            parenthCount = len(parenthList)
+            parenthPosList = [pos for pos, char in enumerate(currentCumulativeOperation) if char is parenth]
+            parenthCount = len(parenthPosList)
 
-            innerIndex = 0
-            while innerIndex < parenthCount:
+            for innerIndex, parenthPos in enumerate(parenthPosList):
                 # if '(', ensure there's a left-adjacent value to check
-                if ((parenthList[innerIndex] > 0) if isLeft else True): 
-                    if currentCumulativeOperation[parenthList[innerIndex] - 1].isnumeric(): # left-adjacent numeric?
+                if ((parenthPos > 0) if isLeft else True): 
+                    if currentCumulativeOperation[parenthPos - 1].isnumeric(): # left-adjacent numeric?
                         # if ')', ensure there's a right-adjacent value to check
-                        if (True if isLeft else (parenthList[innerIndex] != len(currentCumulativeOperation) - 1)): 
-                            if currentCumulativeOperation[parenthList[innerIndex] + 1].isnumeric(): # right-adjacent numeric?
+                        if (True if isLeft else (parenthPos != len(currentCumulativeOperation) - 1)): 
+                            if currentCumulativeOperation[parenthPos + 1].isnumeric(): # right-adjacent numeric?
                                 # no adjacent operator found; insert '*' appropriately
                                 posAdjustment = 0 if isLeft else 1
-                                slice = parenthList[innerIndex] + posAdjustment
+                                slice = parenthPos + posAdjustment
                                 currentCumulativeOperation = currentCumulativeOperation[:slice] + '*' + currentCumulativeOperation[slice:]
                                 # adjust parenthList indices to account for the insertion
                                 if innerIndex != parenthCount: # if not at end
-                                    for each in range(0, parenthCount):
-                                        parenthList[each] += 1
-                innerIndex += 1
+                                    for eachIndex in range(0, parenthCount):
+                                            parenthPosList[eachIndex] += 1
             outerIndex += 1
 
         return currentCumulativeOperation
@@ -434,12 +541,13 @@ class CalcApp(ctk.CTk):
 class ModeOptionMenu(ctk.CTkOptionMenu):
     """ Drop-down menu allowing CalcApp operating modes (i.e., Standard, Programming, Scientific). """
 
-    def __init__(self, parent):
+    def __init__(self, parent, mode):
         """ """
         super().__init__(master = parent, width = 105, fg_color = (LIGHT_GRAY, DARK_GRAY), button_color = COLORS['orange']['fg'], button_hover_color = COLORS['orange']['hover'],
                          text_color = (BLACK, WHITE), font = ctk.CTkFont(family = FONT, size = MODE_SWITCH_FONT_SIZE),
                          values = [e.value for e in CalcMode], command = self.modeOptionMenuCallback)
-        self.pack()
+        self.grid(column = 0, row = 0, padx = 10)
+        self.set(mode.value) # set drop-down menu's displayed value to be the current calculator mode (defined by user settings or defaults)
 
     def modeOptionMenuCallback(self, selection):
         """ 
@@ -490,9 +598,21 @@ class OutputLabel(ctk.CTkLabel):
 
 class Frame(ctk.CTkFrame):
     """ Represents a generic container for widgets. """
+    def __init__(self, parent, width = 1, height = 1):
+        """ """
+        super().__init__(master = parent, fg_color = "transparent", width = width, height = height)
+
+
+class SettingsButton(ctk.CTkButton):
     def __init__(self, parent):
         """ """
-        super().__init__(master = parent, fg_color = "transparent")
+        super().__init__(master = parent, fg_color = "transparent", hover_color = LIGHT_GRAY, width = 1, text = "\u2699", text_color = (BLACK, WHITE), command = self.openSettingsMenu)
+        self.grid(column = 1, row = 0)
+
+    def openSettingsMenu(self):
+        """ """
+        rootApp = self.master.master
+        rootApp.initSettingsMenu()
 
 
 if __name__ == '__main__':
