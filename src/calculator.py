@@ -8,6 +8,7 @@ import darkdetect
 from enum import Enum
 import json
 import os
+import math
 from pathlib import Path
 from PIL import Image
 try: # windows only
@@ -499,24 +500,13 @@ class CalcApp(ctk.CTk):
                     self.cumulativeInputDisplayString.set('ERROR')
                     return
 
-                # format evaluated result, if float
-                if isinstance(currentResult, float):
-                    
-                    # if result is a float, but has no fractional part, convert to int
-                    if currentResult.is_integer():
-                        currentResult = int(currentResult)
-                    
-                    else: # has fractional part; manage precision
-                        currentResult = round(currentResult, 3)
-                        # TODO: expose precision as a variable in an app settings menu
-
                 # update data
                 self.lastOperationWasEval = True
                 self.cumulativeOperationList.clear()
                 self.cumulativeNumInputList = [str(currentResult)] # empty + update by creating new w/ result
 
                 # update display output
-                self.cumulativeInputDisplayString.set(currentResult)
+                self.cumulativeInputDisplayString.set(self.roundToMaxDigits(currentResult))
                 # format any instances of exponentiation prior to display
                 formattedDisplayString = currentCumulativeOperation.replace('**', '^')
                 self.cumulativeOperationDisplayString.set(formattedDisplayString)
@@ -526,6 +516,7 @@ class CalcApp(ctk.CTk):
         Parses operation for instances of parentheses without adjacent operators, e.g., '2(3)' or '2(3)2.'
         When such instances are found, inserts '*' operator before/after as needed.
         """
+
         outerIndex = 0 
         while outerIndex < 2:
             isLeft = outerIndex # first pass = false, 2nd pass = true
@@ -535,11 +526,10 @@ class CalcApp(ctk.CTk):
             parenthCount = len(parenthPosList)
 
             for innerIndex, parenthPos in enumerate(parenthPosList):
-                # if '(', ensure there's a left-adjacent value to check
-                if ((parenthPos > 0) if isLeft else True): 
+                if (parenthPos > 0): # ensure there's a left-adjacent value to check
                     if currentCumulativeOperation[parenthPos - 1].isnumeric(): # left-adjacent numeric?
-                        # if ')', ensure there's a right-adjacent value to check
-                        if (True if isLeft else (parenthPos != len(currentCumulativeOperation) - 1)): 
+                        # ensure there's a right-adjacent value to check
+                        if (parenthPos != len(currentCumulativeOperation) - 1):
                             if currentCumulativeOperation[parenthPos + 1].isnumeric(): # right-adjacent numeric?
                                 # no adjacent operator found; insert '*' appropriately
                                 posAdjustment = 0 if isLeft else 1
@@ -589,8 +579,8 @@ class CalcApp(ctk.CTk):
                                 font = self.smallerWidgetFont,
                                 state = data['state'])
             
-        # setup unique operator buttons
-        funcLookup = {'exponentiate': self.exponentiate, 'square': self.square, 'log': self.log, 'ln': self.ln}
+        # setup unique operator buttons lambda: function(value)
+        funcLookup = {'exponentiate': self.exponentiate, 'square': self.square, 'log': lambda: self.logarithms(10), 'ln': lambda: self.logarithms()}
         uniqueOperators = ['exponentiate', 'square', 'log', 'ln']
         for operator, data in SCI_OPERATOR_BUTTONS.items():
             if operator in uniqueOperators:
@@ -602,8 +592,9 @@ class CalcApp(ctk.CTk):
                     font = self.smallestWidgetFontItalic if data['font'] == 'italic' else self.smallestWidgetFont)
 
     def exponentiate(self):
-        """ """
-        if self.cumulativeNumInputList:
+        """ Appends an '**' operator to cumulative input, and updates display output with a formatted ('^') version. """
+
+        if self.cumulativeNumInputList: # ensure input exists
             self.cumulativeNumInputList.append('**')
         
             # update display output
@@ -612,24 +603,56 @@ class CalcApp(ctk.CTk):
             self.cumulativeInputDisplayString.set(formattedDisplayString)
 
     def square(self):
-        """ """
-        if self.cumulativeNumInputList:
+        """ Appends an '*' operator + the current cumulative input *to* the current cumulative input, and forces an immediate evaluation. """
+
+        if self.cumulativeNumInputList: # ensure input exists
             cumulativeInputStr = ''.join(self.cumulativeNumInputList)
             self.cumulativeNumInputList.append('*' + cumulativeInputStr)
 
-            # update display output
-            self.cumulativeInputDisplayString.set(''.join(self.cumulativeNumInputList))
             # evaluate immediately
             self.mathPressed('=')
 
-    def log(self):
-        """ """
-        print('log!')
+    def logarithms(self, base = None):
+        """ Evaluates base 10 or natural logarithm, rounds to keep result on screen, and updates data/display. """
 
-    def ln(self):
-        """ """
-        print('ln!')
+        if self.cumulativeNumInputList: # ensure input exists
+            try:
+                # get current number input as float
+                currentNumInputFloat = float(''.join(self.cumulativeNumInputList))
+                # evaluate log10 at maximum visible digits
+                logFunc = math.log10 if base == 10 else math.log
+                logResult = self.roundToMaxDigits(logFunc(currentNumInputFloat))
 
+            # error catching
+            except (SyntaxError, KeyError, ValueError):
+                    self.cumulativeInputDisplayString.set('ERROR')
+                    return
+
+            # update data
+            self.cumulativeNumInputList[0] = str(logResult)
+            # update display output
+            self.cumulativeInputDisplayString.set(str(logResult))
+
+    def roundToMaxDigits(self, currentResult):
+        """ Formats evaluated result prior to display so as not to exceed window width. """
+
+        # format evaluated result, if float
+        if isinstance(currentResult, float):
+            
+            # if result is a float, but has no fractional part, convert to int
+            if currentResult.is_integer():
+                currentResult = int(currentResult)
+
+            else: # has fractional part; manage precision
+                numDigits = len(str(currentResult))
+                if numDigits > 9:
+                    allowedDigits = 9 - len(str(int(currentResult)))
+                    currentResult = '{:.{precision}f}'.format(currentResult, precision = allowedDigits)
+           
+        else: # integer
+            pass # TODO: deal with ints exceeding window width
+  
+        return currentResult
 
 class ModeOptionMenu(ctk.CTkOptionMenu):
     """ Drop-down menu allowing CalcApp operating modes (i.e., Standard, Programming, Scientific). """
