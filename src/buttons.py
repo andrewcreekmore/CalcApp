@@ -10,7 +10,7 @@ from settings import *
 class Button(CTkButton):
     """ Represents a CTkButton base class, with generic defaults. """
 
-    def __init__(self, parent, text, function, column, row, font, span = 1, color = 'darkGray', state = "normal"):
+    def __init__(self, parent, text, function, column, row, font, span = 1, color = 'darkGray', state = "normal", value = None):
         """ """
 
         super().__init__(
@@ -38,6 +38,24 @@ class NumberButton(Button):
             parent = parent,
             text = text,
             function = lambda: function(text),
+            column = column,
+            row = row,
+            font = font,
+            color = color,
+            span = span,
+            state = state)
+        
+class SpecialNumberButton(Button):
+    """ Represents a button for entering unique shortcut numerical input (pi, e). Inherits from Button. """
+
+    def __init__(self, parent, text, function, value, column, row, font, span, color = 'darkGray', state = 'normal'):
+        """ """
+
+        super().__init__(
+            parent = parent,
+            text = text,
+            value = value,
+            function = lambda: function(value),
             column = column,
             row = row,
             font = font,

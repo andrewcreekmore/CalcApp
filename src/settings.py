@@ -9,7 +9,7 @@ WINDOW_SIZE = (400, 700)
 NUM_ROWS_COLUMNS = {
     'Standard': {'rows': 7, 'columns': 4},
     'Programming': {'rows': 8, 'columns': 5},
-    'Scientific': {'rows': 8, 'columns': 4}
+    'Scientific': {'rows': 9, 'columns': 5}
 } 
 
 # text attributes
@@ -135,36 +135,43 @@ PROG_MATH_BUTTONS = {
 
 # scientific CalcMode: button layout definitions
 SCI_NUMBER_BUTTONS = {
-    '.': {'column': 2, 'row': 7, 'span': 1, 'state': 'normal'},
-    0: {'column': 1, 'row': 7, 'span': 1, 'state': 'normal'},
-    1: {'column': 0, 'row': 6, 'span': 1, 'state': 'normal'},
-    2: {'column': 1, 'row': 6, 'span': 1, 'state': 'normal'},
-    3: {'column': 2, 'row': 6, 'span': 1, 'state': 'normal'},
-    4: {'column': 0, 'row': 5, 'span': 1, 'state': 'normal'},
-    5: {'column': 1, 'row': 5, 'span': 1, 'state': 'normal'},
-    6: {'column': 2, 'row': 5, 'span': 1, 'state': 'normal'},
-    7: {'column': 0, 'row': 4, 'span': 1, 'state': 'normal'},
-    8: {'column': 1, 'row': 4, 'span': 1, 'state': 'normal'},
-    9: {'column': 2, 'row': 4, 'span': 1, 'state': 'normal'},
-    '(': {'column': 0, 'row': 3, 'span': '1', 'state': 'normal'},
-    ')': {'column': 1, 'row': 3, 'span': '1', 'state': 'normal'}
+    '.': {'column': 3, 'row': 8, 'span': 1, 'state': 'normal'},
+    0: {'column': 2, 'row': 8, 'span': 1, 'state': 'normal'},
+    1: {'column': 1, 'row': 7, 'span': 1, 'state': 'normal'},
+    2: {'column': 2, 'row': 7, 'span': 1, 'state': 'normal'},
+    3: {'column': 3, 'row': 7, 'span': 1, 'state': 'normal'},
+    4: {'column': 1, 'row': 6, 'span': 1, 'state': 'normal'},
+    5: {'column': 2, 'row': 6, 'span': 1, 'state': 'normal'},
+    6: {'column': 3, 'row': 6, 'span': 1, 'state': 'normal'},
+    7: {'column': 1, 'row': 5, 'span': 1, 'state': 'normal'},
+    8: {'column': 2, 'row': 5, 'span': 1, 'state': 'normal'},
+    9: {'column': 3, 'row': 5, 'span': 1, 'state': 'normal'}
+}
+
+SCI_SPECIAL_NUMBER_BUTTONS = {
+    f'\N{MATHEMATICAL ITALIC SMALL PI}': {'column': 1, 'row': 2, 'span': '1', 'state': 'normal', 'value': '3.14159'},
+    f'\N{MATHEMATICAL ITALIC SMALL E}': {'column': 2, 'row': 2, 'span': '1', 'state': 'normal', 'value': '2.71828'},
+    f'\N{MEDIUM LEFT PARENTHESIS ORNAMENT}': {'column': 1, 'row': 4, 'span': '1', 'state': 'normal', 'value': '('},
+    f'\N{MEDIUM RIGHT PARENTHESIS ORNAMENT}': {'column': 2, 'row': 4, 'span': '1', 'state': 'normal', 'value': ')'}
 }
 
 SCI_OPERATOR_BUTTONS = {
-    'clear': {'column': 2, 'row': 2, 'text': 'AC', 'image path': None},
-    'backspace':{'column': 3, 'row': 2, 'text': '\u232B', 'image path': None},
-    'invert': {'column': 0, 'row': 7, 'text': '', 'image path': {'light': 'images/invertLight.png', 'dark': 'images/invertDark.png'}},
-    'percent': {'column': 2, 'row': 3, 'text': '%', 'image path': None},
-    'leftShift': {'column': 1, 'row': 2, 'text': '<<', 'image path': None},
-    'rightShift': {'column': 2, 'row': 2, 'text': '>>', 'image path': None}
+    'clear': {'column': 3, 'row': 2, 'text': 'AC', 'image path': None},
+    'backspace':{'column': 4, 'row': 2, 'text': '\u232B', 'image path': None},
+    'invert': {'column': 1, 'row': 8, 'text': '', 'image path': {'light': 'images/invertLight.png', 'dark': 'images/invertDark.png'}},
+    'percent': {'column': 3, 'row': 4, 'text': '%', 'image path': None},
+    'exponentiate': {'column': 1, 'row': 3, 'text': f'\N{LATIN SMALL LETTER X}\N{SUPERSCRIPT LATIN SMALL LETTER N}', 'image path': None, 'font': 'italic'},
+    'square': {'column': 2, 'row': 3, 'text': f'\N{LATIN SMALL LETTER X}\N{SUPERSCRIPT TWO}', 'image path': None, 'font': 'italic'},
+    'log': {'column': 0, 'row': 7, 'text': 'log', 'image path': None, 'font': None},
+    'ln': {'column': 0, 'row': 8, 'text': 'ln', 'image path': None, 'font': None}
     }
 
 SCI_MATH_BUTTONS = {
-    '/': {'column': 3, 'row': 3, 'character': '', 'image path': {'light': 'images/divideLight.png', 'dark': 'images/divideDark.png'}},
-    '*': {'column': 3, 'row': 4, 'character': 'x', 'image path': None},
-    '-': {'column': 3, 'row': 5, 'character': '-', 'image path': None},
-    '=': {'column': 3, 'row': 7, 'character': '=', 'image path': None},
-    '+': {'column': 3, 'row': 6, 'character': '+', 'image path': None}
+    '/': {'column': 4, 'row': 4, 'character': '', 'image path': {'light': 'images/divideLight.png', 'dark': 'images/divideDark.png'}},
+    '*': {'column': 4, 'row': 5, 'character': 'x', 'image path': None},
+    '-': {'column': 4, 'row': 6, 'character': '-', 'image path': None},
+    '=': {'column': 4, 'row': 8, 'character': '=', 'image path': None},
+    '+': {'column': 4, 'row': 7, 'character': '+', 'image path': None}
 }
 
 # button layout data lookup table

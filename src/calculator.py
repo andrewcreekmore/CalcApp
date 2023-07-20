@@ -51,6 +51,9 @@ class CalcApp(ctk.CTk):
 
         # set calculator operating mode
         self.currentMode = CalcMode(self.userSettings['defaultCalcMode'])
+        # set always on top + app opacity
+        self.wm_attributes('-topmost', self.userSettings['onTop'])
+        self.wm_attributes('-alpha', self.userSettings['opacity'])
 
         # data
         self.cumulativeInputDisplayString = ctk.StringVar(value = '0')
@@ -113,11 +116,22 @@ class CalcApp(ctk.CTk):
 
         ctk.set_appearance_mode(value)
         isDark = True if value == 'Dark' else False
-        invisibleButtonColor = BLACK if isDark else WHITE
-        self.exitToAppButton._hover_color = invisibleButtonColor
+        self.exitToAppButton._hover_color = BLACK if isDark else WHITE
         self.changeTitleBarColor(isDark)
         # update corresponding persistent saved data
         self.saveUserSetting('appearance', value.lower())
+
+    def toggleOnTopSetting(self):
+        """ Flips current onTop value, sets window attribute, and updates the saved user setting accordingly. """
+        newOnTop = not self.userSettings['onTop']
+        self.wm_attributes('-topmost', newOnTop)
+        self.saveUserSetting('onTop', newOnTop)
+
+    def setOpacitySetting(self, value):
+        """ Adjusts window opacity to the passed value, and saves the value to user settings. """
+
+        self.wm_attributes('-alpha', value)
+        self.saveUserSetting('opacity', value)
 
     def setDefaultModeSetting(self, value):
         """ Routes passed calcMode value to appropriate user setting. """
@@ -236,7 +250,7 @@ class CalcApp(ctk.CTk):
         self.largerWidgetFont = ctk.CTkFont(family = FONT, size = 16)
 
         # container for actual settings menu overlay
-        self.settingsMenuSubFrame = ctk.CTkFrame(self, width = 300, height = 200, border_color = (BLACK, WHITE), border_width = 2)
+        self.settingsMenuSubFrame = ctk.CTkFrame(self, width = 300, height = 285, border_color = (BLACK, WHITE), border_width = 2)
         self.settingsMenuSubFrame.pack_propagate(False)
         self.settingsMenuSubFrame.place(relx = 0.125, rely = 0.2)
 
@@ -268,6 +282,23 @@ class CalcApp(ctk.CTk):
         self.defaultModeButton.set(self.userSettings['defaultCalcMode'])
         self.defaultModeButton.pack()
 
+        # create opacity setting label
+        self.opacitySettingLabel = ctk.CTkLabel(self.settingsMenuSubFrame, text = 'Opacity:', font = self.smallerWidgetFont)
+        self.opacitySettingLabel.pack(padx = 10, pady = 10, anchor = 'w')
+
+        # create opacity slider
+        self.opacitySlider = ctk.CTkSlider(self.settingsMenuSubFrame, width = 150, button_color = (DARK_GRAY, WHITE), button_hover_color = '#FFB143',
+                                            from_ = 0.1, to = 1.0, command = self.setOpacitySetting)
+        self.opacitySlider.set(self.userSettings['opacity'])
+        self.opacitySlider.pack(padx = 15, pady = 0, anchor = 'center')
+
+        # create always on top setting switch
+        self.alwaysOnTopSwitch = ctk.CTkSwitch(self.settingsMenuSubFrame, text = 'Keep app on top', 
+                                               font = self.smallerWidgetFont, command = self.toggleOnTopSetting, progress_color = '#FF9500')
+        if self.userSettings['onTop']: self.alwaysOnTopSwitch.select() 
+        else: self.alwaysOnTopSwitch.deselect() 
+        self.alwaysOnTopSwitch.pack(padx = 10, pady = 12, anchor = 'w')
+
     def exitSettingsMenu(self):
         """ Cleans up when closing the settingsMenu overlay. """
         self.settingsMenuSubFrame.destroy()
@@ -276,7 +307,9 @@ class CalcApp(ctk.CTk):
     def loadUserSettings(self):
         """ Loads user settings data from external JSON file, creating w/ defaults if necessary. Updates local data accordingly. """
         
-        defaultSettings = {'appearance': f'{"dark" if darkdetect.isDark else "light"}', 'defaultCalcMode': 'Standard'}
+        defaultSettings = {'appearance': f'{"dark" if darkdetect.isDark else "light"}', 
+                           'defaultCalcMode': 'Standard', 'onTop': False,
+                           'opacity': 0.9}
 
         # load saved settings, if present
         settingsData = {}
@@ -395,7 +428,9 @@ class CalcApp(ctk.CTk):
         self.cumulativeNumInputList.append(str(value))
         # from list, convert to displayed format (w/ new inputs added to end of list (positioned to right of last input)) 
         cumulativeNumInputToDisplay = ''.join(self.cumulativeNumInputList) 
-        self.cumulativeInputDisplayString.set(cumulativeNumInputToDisplay)
+        # format any instances of exponentiation prior to displaying
+        formattedDisplayString = cumulativeNumInputToDisplay.replace('**', '^')
+        self.cumulativeInputDisplayString.set(formattedDisplayString)
 
         # update tracking data
         self.lastInputWasNum = True
@@ -482,7 +517,9 @@ class CalcApp(ctk.CTk):
 
                 # update display output
                 self.cumulativeInputDisplayString.set(currentResult)
-                self.cumulativeOperationDisplayString.set(currentCumulativeOperation)
+                # format any instances of exponentiation prior to display
+                formattedDisplayString = currentCumulativeOperation.replace('**', '^')
+                self.cumulativeOperationDisplayString.set(formattedDisplayString)
 
     def parseParentheses(self, currentCumulativeOperation):
         """ 
@@ -535,7 +572,63 @@ class CalcApp(ctk.CTk):
 
     def initScientificWidgets(self):
         """ Initializes Scientific CalcMode widgets... """
-        pass
+        
+        # setup widget fonts
+        self.smallestWidgetFont = ctk.CTkFont(family = FONT, size = 18)
+        self.smallestWidgetFontItalic = ctk.CTkFont(family = FONT, size = 18, slant = 'italic')
+        
+        # setup special number buttons
+        for specialNumber, data in SCI_SPECIAL_NUMBER_BUTTONS.items():
+            SpecialNumberButton(parent = self.activeFrame,
+                                text = specialNumber,
+                                value = data['value'],
+                                function = self.numberPressed,
+                                column = data['column'],
+                                span = data['span'],
+                                row = data['row'],
+                                font = self.smallerWidgetFont,
+                                state = data['state'])
+            
+        # setup unique operator buttons
+        funcLookup = {'exponentiate': self.exponentiate, 'square': self.square, 'log': self.log, 'ln': self.ln}
+        uniqueOperators = ['exponentiate', 'square', 'log', 'ln']
+        for operator, data in SCI_OPERATOR_BUTTONS.items():
+            if operator in uniqueOperators:
+                Button(parent = self.activeFrame,
+                    text = data['text'],
+                    function = funcLookup[operator],
+                    column = data['column'],
+                    row = data['row'],
+                    font = self.smallestWidgetFontItalic if data['font'] == 'italic' else self.smallestWidgetFont)
+
+    def exponentiate(self):
+        """ """
+        if self.cumulativeNumInputList:
+            self.cumulativeNumInputList.append('**')
+        
+            # update display output
+            displayString = ''.join(self.cumulativeNumInputList)
+            formattedDisplayString = displayString.replace('**', '^')
+            self.cumulativeInputDisplayString.set(formattedDisplayString)
+
+    def square(self):
+        """ """
+        if self.cumulativeNumInputList:
+            cumulativeInputStr = ''.join(self.cumulativeNumInputList)
+            self.cumulativeNumInputList.append('*' + cumulativeInputStr)
+
+            # update display output
+            self.cumulativeInputDisplayString.set(''.join(self.cumulativeNumInputList))
+            # evaluate immediately
+            self.mathPressed('=')
+
+    def log(self):
+        """ """
+        print('log!')
+
+    def ln(self):
+        """ """
+        print('ln!')
 
 
 class ModeOptionMenu(ctk.CTkOptionMenu):
@@ -570,18 +663,6 @@ class ModeOptionMenu(ctk.CTkOptionMenu):
 
                     case CalcMode.CM_SCIENTIFIC:
                         rootApp.initScientificWidgets()
-
-
-class DebugCheckModeButton(ctk.CTkButton):
-    """ DEBUG ONLY: returns CalcApp's currentMode. """
-
-    def __init__(self, parent):
-        """ """
-        super().__init__(master = parent, text = "DEBUG: get currentMode", command = self.printCurrentMode)
-        self.grid(column = 0, columnspan = 4, row = 4)
-
-    def printCurrentMode(self):
-        print(self.master.currentMode.value)
 
 
 class OutputLabel(ctk.CTkLabel):
