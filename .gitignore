@@ -1,1 +1,10 @@
+
+__pycache__/
+build/
+dist/
+generated/
+output/
+
 settings.json
+tests.py
+*.pyc

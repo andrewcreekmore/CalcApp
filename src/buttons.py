@@ -1,13 +1,15 @@
 """
-button.py: 
-- all single-function CalcApp buttons
-- Button/ImageButton base classes, NumberButton, MathButton, & MathImageButton children
+buttons.py: 
+- single-function Calculator button prototypes
+- specialized buttons inherit from Button/ImageButton base classes
+- NumberButton, SpecialNumberButton, MathButton, & MathImageButton children
 """
 
-from customtkinter import CTkButton
-from settings import *
+import customtkinter as ctk
+from common import *
 
-class Button(CTkButton):
+
+class Button(ctk.CTkButton):
     """ Represents a CTkButton base class, with generic defaults. """
 
     def __init__(self, parent, text, function, column, row, font, span = 1, color = 'darkGray', state = "normal", value = None):
@@ -45,6 +47,7 @@ class NumberButton(Button):
             span = span,
             state = state)
         
+
 class SpecialNumberButton(Button):
     """ Represents a button for entering unique shortcut numerical input (pi, e). Inherits from Button. """
 
@@ -80,7 +83,7 @@ class MathButton(Button):
             color = color)
 
 
-class ImageButton(CTkButton):
+class ImageButton(ctk.CTkButton):
     """ Represents a CTkButton base class, with generic defaults and an added image variable. """
 
     def __init__(self, parent, image, function, column, row, text = '', color = 'darkGray'):

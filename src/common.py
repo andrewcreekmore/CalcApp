@@ -1,8 +1,16 @@
 """
-settings.py: formatting + positional data
+common.py: mode definitions, formatting + positional data
 - element sizes, text attributes, layout styling
 - color definitions, button metadata, key mappings 
 """
+
+from enum import Enum
+
+class CalcMode(Enum):
+    """ Represents possible modes of Calculator operation. """
+    CM_STANDARD = "Standard"
+    CM_PROGRAMMING = "Programming"
+    CM_SCIENTIFIC = "Scientific"
 
 # basic layout sizing
 WINDOW_SIZE = (400, 700)
@@ -41,7 +49,7 @@ COLORS = {
 
 BUTTON_STYLING = { 'gap': 0.5, 'corner-radius': 0}
 
-# map of input keycodes to corresponding CalcApp function and argument
+# map of input keycodes to corresponding Calculator function and argument
 KEY_FUNCTION_MAP = {
     'Delete': {'function': 'clearAll'},
     'BackSpace': {'function': 'clearLast'},
