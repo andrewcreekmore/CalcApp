@@ -1,8 +1,8 @@
-# Calculator
+# CalcApp
 -WORK IN PROGRESS-  
   
 multi-function calculator desktop app  
-- Standard, Programming, and Scientific modes
+- Standard and Scientific modes
 - light/dark themes  
 - persistent user settings
 
