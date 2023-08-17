@@ -8,6 +8,7 @@ import customtkinter as ctk
 from decimal import Decimal
 import math
 from PIL import Image
+from simpleeval import simple_eval
 
 from buttons import *
 
@@ -110,16 +111,48 @@ class Calculator():
     def invert(self):
         """ Flips sign of current number input / result. """
 
-        # get current number input as str
-        currentNumInput = ''.join(self.cumulativeNumInputList)
+        # get current number input as float and as str
+        currentNumInputFloat = float(''.join(self.cumulativeNumInputList))
+        currentNumInputStr = ''.join(self.cumulativeNumInputList)
 
-        if currentNumInput: # if input exists
-            isPositive = currentNumInput[0].isnumeric()
+        if currentNumInputStr: # if input exists
+            isPositive = True if currentNumInputFloat > 0 else False
             # flip sign + update data
-            flippedNumInput = list('-' + currentNumInput) if isPositive else list(currentNumInput[1:])
+            flippedNumInput = list('-' + currentNumInputStr) if isPositive else list(currentNumInputStr[1:])
             self.cumulativeNumInputList = flippedNumInput
+        
             # update display output
-            self.cumulativeInputDisplayString.set(''.join(self.cumulativeNumInputList))
+            # set base str object to deal with
+            formattedStr = ''.join(self.cumulativeNumInputList)
+            # if positive, and adding a '-' will push us outside maximum window width, shorten first
+            if isPositive and len(currentNumInputStr) > 9:
+                formattedStr = self.getResultDisplayStr(float(''.join(flippedNumInput)))
+   
+            # check for pre-existing sci notation
+            if 'e' in self.cumulativeInputDisplayString.get():
+                sciNotation = self.cumulativeInputDisplayString.get()
+                if isPositive:
+                    if len(sciNotation) > 9:
+                    # break up and format shortened string
+                        significand = sciNotation.split('e')[0].rstrip('0').rstrip('.')
+                        exponentSign = sciNotation.split('e')[1][0]
+                        exponentValue = sciNotation.split('e')[1][1:]
+                        
+                        significandLength = len(significand)
+                        # less 2 to get the number of fractional digits
+                        significandPrecision = significandLength - 2
+                        roundedSignificand = round(float(significand), significandPrecision - 1)
+        
+                        formattedSciNotation = str(roundedSignificand) + 'e' + exponentSign + exponentValue
+                        flippedSciNotation = '-' + formattedSciNotation
+                    else:
+                        flippedSciNotation = '-' + sciNotation            
+                else:
+                    flippedSciNotation = sciNotation[1:]
+                self.cumulativeInputDisplayString.set(flippedSciNotation)
+            
+            else:
+                self.cumulativeInputDisplayString.set(formattedStr)
 
     def numberPressed(self, value):
         """ Handles numerical input. """
@@ -130,6 +163,9 @@ class Calculator():
         cumulativeNumInputToDisplay = ''.join(self.cumulativeNumInputList) 
         # format any instances of exponentiation prior to displaying
         formattedDisplayString = cumulativeNumInputToDisplay.replace('**', '^')
+        # if adding another number will push us outside maximum window width, format first
+        if len(formattedDisplayString) > 9:
+            formattedDisplayString = self.getResultDisplayStr(float(formattedDisplayString))
         self.cumulativeInputDisplayString.set(formattedDisplayString)
 
         # update tracking data
@@ -193,7 +229,8 @@ class Calculator():
                 currentCumulativeOperation = self.parseParentheses(currentCumulativeOperation)
                 # evaluate
                 try:
-                    currentResult = eval(currentCumulativeOperation)
+                    currentResult = simple_eval(currentCumulativeOperation)
+                    #print(currentCumulativeOperation)
                 # error catching
                 except (SyntaxError, KeyError, TypeError):
                     self.cumulativeInputDisplayString.set('ERROR')
@@ -379,8 +416,8 @@ class Calculator():
                                 state = data['state'])
             
         # setup unique operator buttons
-        funcLookup = {'exponentiate': self.exponentiate, 'square': self.square, 'log': lambda: self.logarithms(10), 'ln': lambda: self.logarithms()}
-        uniqueOperators = ['exponentiate', 'square', 'log', 'ln']
+        funcLookup = {'exponentiate': self.exponentiate, 'square': self.square, 'log': lambda: self.logarithms(10), 'ln': lambda: self.logarithms(), 'sci': lambda: self.sciNotationFunc()}
+        uniqueOperators = ['exponentiate', 'square', 'log', 'ln', 'sci']
         for operator, data in SCI_OPERATOR_BUTTONS.items():
             if operator in uniqueOperators:
                 Button(parent = self.activeFrame,
@@ -431,7 +468,18 @@ class Calculator():
             self.cumulativeNumInputList[0] = str(logResult)
             # update display output
             self.cumulativeInputDisplayString.set(str(logResult))
-
+            
+    def sciNotationFunc(self):
+        """ """
+        
+        if self.cumulativeNumInputList: # ensure have input
+            # get current number input as float
+            currentNumInputFloat = float(''.join(self.cumulativeNumInputList))
+            sciNotationResult = self.convertToSciNotation(currentNumInputFloat)
+            
+            # update display output
+            self.cumulativeInputDisplayString.set(sciNotationResult)
+            
     def roundToMaxDigits(self, currentResult):
         """ Formats evaluated result prior to display so as not to exceed window width. """
 
@@ -447,7 +495,10 @@ class Calculator():
         if numDigits > maxDigits:
             allowedDigits = maxDigits - len(str(int(currentResult)))
             currentResult = '{:.{precision}f}'.format(currentResult, precision = allowedDigits)
-  
+
+        # strip trailing zeroes
+        currentResult = str(currentResult).rstrip('0')
+        
         return currentResult
     
     def convertToSciNotation(self, value):
@@ -459,9 +510,11 @@ class Calculator():
         exponent = numDigitsValue - 1
         numDigitsExponent = len(str(exponent))
         
-        # 9 is max visible in window; less 2 to account for 'e+' display
+        # 10 chars is max visible in window; less 2 to account for 'e+' display; less 1 for '.'
+        isFloat = True if isinstance(value, float) else False
         maxDigits = 8 if value < 0 else 9
-        allowedDigits = maxDigits - 2 - numDigitsExponent
+        nonNumericalChars = 2 if isFloat else 3
+        allowedDigits = maxDigits - nonNumericalChars - numDigitsExponent
         
         # get sci notation at allowed max visible digits
         sciNotation = f"{Decimal(f'{value}'):.{allowedDigits}E}"
@@ -470,10 +523,10 @@ class Calculator():
         significand = sciNotation.split('E')[0].rstrip('0').rstrip('.')
         exponentSign = sciNotation.split('E')[1][0]
         exponentValue = sciNotation.split('E')[1][1:]
-        strippedExponent = exponentValue.strip('0')
+        if len(exponentValue) > 1 and exponentValue[0] == '0': exponentValue = exponentValue[1]
         
-        return significand + 'e' + exponentSign + strippedExponent
-              
+        return significand + 'e' + exponentSign + exponentValue
+             
     def getResultDisplayStr(self, currentResult) -> str:
         """ Formats string of evaluated result prior to display so as not to exceed window width. """
         
@@ -486,6 +539,7 @@ class Calculator():
                 
         # determine length; convert to sci notation for display if necessary
         numDigits = len(str(currentResult))
+        #print(numDigits)
         maxDigits = 8 if currentResult < 0 else 9
         if numDigits > maxDigits:
             

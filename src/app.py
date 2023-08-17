@@ -78,10 +78,10 @@ class App(ctk.CTk):
         lookupKey = event.keysym
         try:
             if 'arg' in KEY_FUNCTION_MAP[lookupKey]:
-                getattr(self, KEY_FUNCTION_MAP[lookupKey]['function'])(KEY_FUNCTION_MAP[lookupKey]['arg'])
+                getattr(self.calculator, KEY_FUNCTION_MAP[lookupKey]['function'])(KEY_FUNCTION_MAP[lookupKey]['arg'])
                 
             else: # no args passed
-                getattr(self, KEY_FUNCTION_MAP[lookupKey]['function'])()
+                getattr(self.calculator, KEY_FUNCTION_MAP[lookupKey]['function'])()
         except:
             pass
 

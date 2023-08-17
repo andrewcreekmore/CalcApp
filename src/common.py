@@ -171,7 +171,8 @@ SCI_OPERATOR_BUTTONS = {
     'exponentiate': {'column': 1, 'row': 3, 'text': f'\N{LATIN SMALL LETTER X}\N{SUPERSCRIPT LATIN SMALL LETTER N}', 'image path': None, 'font': 'italic'},
     'square': {'column': 2, 'row': 3, 'text': f'\N{LATIN SMALL LETTER X}\N{SUPERSCRIPT TWO}', 'image path': None, 'font': 'italic'},
     'log': {'column': 0, 'row': 7, 'text': 'log', 'image path': None, 'font': None},
-    'ln': {'column': 0, 'row': 8, 'text': 'ln', 'image path': None, 'font': None}
+    'ln': {'column': 0, 'row': 8, 'text': 'ln', 'image path': None, 'font': None},
+    'sci': {'column': 3, 'row': 3, 'text': 'sci', 'image path': None, 'font': None}
     }
 
 SCI_MATH_BUTTONS = {
